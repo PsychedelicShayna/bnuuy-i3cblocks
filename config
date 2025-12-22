@@ -1,0 +1,92 @@
+## Core neutrals
+#set $gb_bg      #282828
+#set $gb_fg      #ebdbb2
+#set $gb_fg_dim  #a89984
+
+## Accents (soft)
+#set $gb_blue    #458588
+#set $gb_aqua    #689d6a
+#set $gb_green   #98971a
+#set $gb_yellow  #d79921
+#set $gb_orange  #d65d0e
+#set $gb_red     #cc241d
+#set $gb_purple  #b16286
+
+[CPU]
+command=$PWD/blocks/cpu
+label=  
+interval=persist
+format=json
+# interval=-3/persist
+# label=C:
+
+# [CPU]
+# command=$PWD/cpu.sh
+# interval=1.0010
+# label=  
+# #color=#aaffaa
+# color=#98971a
+# separator=true
+
+[GPU]
+command=$PWD/gpu.sh
+interval=1.020
+label=   
+color=#98971a
+
+# 󰦱  󰋁  󰠱  󱩡  󰠱    󰂸                
+[Memory]
+command=$PWD/memory.sh
+interval=1.300
+label=  
+color=#98971a
+
+[Disk]
+# command=printf "%s \n" "$(df -h / | awk 'NR==2 { print $5, $4  }')"
+command=$PWD/disk.pl "/"
+interval=30
+color=#d79921
+
+
+[Disk2]
+# command=printf "%s \n" "$(df -h /mnt/alias/m2/ | awk 'NR==2 { print $5, $4  }')"
+command=$PWD/disk.pl /mnt/alias/m2
+interval=30
+color=#d79921
+
+[Disk I/O]
+command=printf " %s \n" "$($PWD/diskio.sh)"
+interval=1
+label=  
+color=#d79921
+
+[Network]
+command=printf "%s \n" "$($PWD/net.sh)"
+interval=1
+label=   
+color=#458588
+
+[IP]
+command=printf "%s \n" "$($PWD/ip.sh)"
+interval=10
+label= 󰈀  
+color=#458588
+
+[PubIP]
+command=printf " %s \n" "$(curl myip.wtf)"
+color=#458588
+label=  
+interval=600
+
+
+[Weather]
+command=printf " %s \n" "$(curl -s 'https://wttr.in/?format=1'| rg '\d\d?..' -o)"
+interval=300
+color=#b16286
+
+[Time]
+command=$PWD/clock.sh
+interval=10
+color=#b16286
+
+
