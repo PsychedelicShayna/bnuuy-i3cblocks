@@ -2,3 +2,4 @@ blocks/
 old/
 other/
 ref/
+*.out
