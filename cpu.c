@@ -6,6 +6,10 @@
 
 #include "i3blocks_common.h"
 
+#ifndef USLEEPFOR
+    #define USLEEPFOR 1000000
+#endif
+
 typedef struct {
     int64_t t_user_time;
     int64_t t_user_nice;
@@ -90,7 +94,10 @@ double cpu_usage()
     int64_t before_total  = sum_proc_stat(&before);
     int64_t before_idle   = before.t_idle;
     int64_t before_active = before_total - before_idle;
-    usleep(1000000);
+
+#ifndef NOSLEEP
+    usleep(USLEEPFOR);
+#endif
 
     proc_stat_t now = sample_cpu();
 
@@ -127,9 +134,23 @@ void output_loop(atomic_bool alive)
     }
 }
 
-int main(int argc, char* argv[])
+#ifndef SINGLE_SHOT
+
+int main()
 {
     atomic_bool alive;
     atomic_store(&alive, 1);
     output_loop(alive);
+    return 0;
 }
+
+#else
+
+int main()
+{
+    double usage = cpu_usage(), frequency = cpu_frequency();
+    output(usage, frequency);
+    return 0;
+}
+
+#endif
