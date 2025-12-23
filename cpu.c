@@ -41,13 +41,13 @@ int64_t delta(int64_t a, int64_t b)
     return *max - *min;
 }
 
-proc_stat_t sample_cpu()
+proc_stat_t sample_cpu(void)
 {
-    FILE* f = fopen("/proc/stat", "r");
-    char  buf[256];
-    int   nb = fread(buf, sizeof(char), sizeof(buf), f);
+    FILE*         f = fopen("/proc/stat", "r");
+    char          buf[256];
+    unsigned long nb = fread(buf, sizeof(char), sizeof(buf), f);
     fclose(f);
-    buf[nb] = 0;
+    buf[nb - 1] = 0;
 
     proc_stat_t ps;
 
@@ -74,7 +74,7 @@ int64_t sum_proc_stat(proc_stat_t* ps)
            + ps->t_stolen + ps->t_guest + ps->t_guest_nice;
 }
 
-double cpu_frequency()
+double cpu_frequency(void)
 {
     char   buffer[256];
     double freq;
@@ -86,7 +86,7 @@ double cpu_frequency()
     return freq / 1000000;
 }
 
-double cpu_usage()
+double cpu_usage(void)
 {
     static proc_stat_t before;
     before = sample_cpu();
@@ -95,9 +95,7 @@ double cpu_usage()
     int64_t before_idle   = before.t_idle;
     int64_t before_active = before_total - before_idle;
 
-#ifndef NOSLEEP
     usleep(USLEEPFOR);
-#endif
 
     proc_stat_t now = sample_cpu();
 
@@ -116,31 +114,52 @@ double cpu_usage()
     return usage;
 }
 
-static inline void output(double usage, double frequency)
+static inline void output(GB_COLOR color, double usage, double frequency)
 {
-    static char full_text[64], out[256];
-    sprintf(full_text, "%02.lf%% @ %2.2lfGHz", usage, frequency);
-    sprintf(out, i3bjt, full_text, gb_green);
+    char full_text[64], out[256];
+    sprintf(full_text, "%2.lf%% %2.2lfGHz", usage, frequency);
+    sprintf(out, i3bjt, full_text, color);
     fprintf(stdout, "%s", out);
     fflush(stdout);
 }
 
-void output_loop(atomic_bool alive)
+void output_loop(atomic_bool* alive)
 {
-    for(; alive;) {
-        double usage     = cpu_usage();
-        double frequency = cpu_frequency();
-        output(usage, frequency);
+    GB_Color_Transition_Step baseline_green = {
+        .threshold  = 10.0,
+        .transition = GB_RGB_GREEN,
+    };
+    GB_Color_Transition_Step green_to_orange = {
+        .threshold  = 50.0,
+        .transition = GB_RGB_ORANGE,
+    };
+    GB_Color_Transition_Step orange_to_red = {
+        .threshold  = 100.0,
+        .transition = GB_RGB_RED,
+    };
+
+    GB_Color_Transition_Step steps[3];
+
+    steps[0] = baseline_green;
+    steps[1] = green_to_orange;
+    steps[2] = orange_to_red;
+
+    while(*alive) {
+        double   usage     = cpu_usage();
+        double   frequency = cpu_frequency();
+        GB_COLOR color     = gb_map_percent(usage, steps, 3, GB_GREEN);
+        output(color, usage, frequency);
     }
 }
 
 #ifndef SINGLE_SHOT
 
-int main()
+int main(void)
 {
+
     atomic_bool alive;
     atomic_store(&alive, 1);
-    output_loop(alive);
+    output_loop(&alive);
     return 0;
 }
 

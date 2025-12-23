@@ -29,17 +29,18 @@ format=json
 # separator=true
 
 [GPU]
-command=$PWD/gpu.sh
-interval=1.020
+command=$PWD/blocks/gpu
+interval=persist
+format=json
 label=   
-color=#98971a
+# color=#98971a
 
 # 󰦱  󰋁  󰠱  󱩡  󰠱    󰂸                
 [Memory]
-command=$PWD/memory.sh
-interval=1.300
+command=$PWD/blocks/memory
+interval=persist
+format=json
 label=  
-color=#98971a
 
 [Disk]
 # command=printf "%s \n" "$(df -h / | awk 'NR==2 { print $5, $4  }')"
