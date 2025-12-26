@@ -14,7 +14,6 @@
 
 [CPU]
 command=$PWD/blocks/cpu
-label=  
 interval=persist
 format=json
 # interval=-3/persist
@@ -32,7 +31,6 @@ format=json
 command=$PWD/blocks/gpu
 interval=persist
 format=json
-label=   
 # color=#98971a
 
 # 󰦱  󰋁  󰠱  󱩡  󰠱    󰂸                
@@ -40,7 +38,6 @@ label= 
 command=$PWD/blocks/memory
 interval=persist
 format=json
-label=  
 
 [Disk]
 # command=printf "%s \n" "$(df -h / | awk 'NR==2 { print $5, $4  }')"
