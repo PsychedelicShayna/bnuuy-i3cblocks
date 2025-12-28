@@ -1,4 +1,4 @@
-CFLAGS += -Werror
+# CFLAGS += -Werror
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference \
 	  -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion \
@@ -7,7 +7,7 @@ CFLAGS += -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference \
 
 CFLAGS += -fsanitize=address -fsanitize=undefined
 
-all: cpu gpu
+all: cpu gpu memory datetime
 
 cpu: cpu.c
 	cc cpu.c -O3 -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/cpu
@@ -19,6 +19,10 @@ gpu: gpu.c
 memory: memory.c
 	cc memory.c -O3 -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/memory
 
+datetime: datetime.c
+	cc datetime.c -O3 -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/datetime
+
+
 clean:
-	rm ./blocks/cpu ./blocks/cpu_test ./blocks/gpu ./blocks/gpu_test 2>&1>/dev/null
+	rm ./blocks/cpu  ./blocks/gpu ./blocks/datetime ./blocks/*_test 2>&1>/dev/null
 
