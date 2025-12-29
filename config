@@ -20,7 +20,7 @@
 [TESTBLOCK]
 command=blocks/testblock
 format=json
-interval=1
+interval=persist
 
 [CPU]
 command=$PWD/blocks/cpu
