@@ -27,6 +27,14 @@ typedef struct {
     } u;
 } i3bar_proto_min_width;
 
+#define I3B_DEFAULT_MIN_WIDTH_PIXELS      300
+#define I3B_DEFAULT_ALIGN                 I3B_ALIGN_LEFT
+#define I3B_DEFAULT_BORDER                1
+#define I3B_DEFAULT_SEPARATOR_BLOCK_WIDTH 9
+#define I3B_DEFAULT_SEPARATOR             true
+#define I3B_DEFAULT_MARKUP                "none"
+#define I3B_DEFAULT_INT                   INT32_MAX
+
 struct i3bar_proto_block {
     /* The full_text will be displayed by i3bar on the status line.
      * This is the only required key. If full_text is an empty string,
@@ -128,15 +136,6 @@ struct i3bar_proto_block {
     char* markup;
 };
 
-#define I3B_DEFAULT_MIN_WIDTH_PIXELS      300
-#define I3B_DEFAULT_ALIGN                 I3B_ALIGN_LEFT
-#define I3B_DEFAULT_BORDER                1
-#define I3B_DEFAULT_SEPARATOR_BLOCK_WIDTH 9
-#define I3B_DEFAULT_SEPARATOR             true
-#define I3B_DEFAULT_MARKUP                "none"
-
-#define I3B_DEFAULT_INT INT32_MAX
-
 typedef struct i3bar_proto_block i3bar_block_t;
 
 void i3bar_block_init(i3bar_block_t* block) {
@@ -150,13 +149,13 @@ void i3bar_block_init(i3bar_block_t* block) {
     block->border_bottom = I3B_DEFAULT_INT;
     block->border_left   = I3B_DEFAULT_INT;
     block->min_width = (i3bar_proto_min_width) { .type = I3B_MIN_WIDTH_NONE };
-    block->align     = I3B_ALIGN_LEFT;
+    block->align     = NULL;
     block->urgent    = I3B_DEFAULT_BOOL;
     block->name      = NULL;
     block->instance  = NULL;
     block->separator = I3B_DEFAULT_BOOL;
     block->separator_block_width = I3B_DEFAULT_INT;
-    block->markup                = "none";
+    block->markup                = NULL;
 }
 /*
 
@@ -260,4 +259,4 @@ void i3bar_block_output(i3bar_block_t* block) {
     printf("}\n");
 }
 
-#endif // !_I3B_H
+#endif // !_I3BAR_H
