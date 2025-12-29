@@ -13,12 +13,12 @@ static const char* clocks[24]  = { "󱑖", "󱑋", "󱑌", "󱑍", "󱑎",
                                    "󱑁", "󱑂", "󱑃", "󱑄", "󱑅",
                                    "󱑆", "󱑇", "󱑈", "󱑉" };
 static const char* seasons[12] = {
-    "", "", "󰲓", "󰲓", "󰲓", "",
-    "", "", "󰉊", "󰉊", "󰉊", ""
+    "", "", "󰲓", "󰲓", "󰲓", "",
+    "", "", "󰉊", "󰉊", "󰉊", ""
 };
 
 void output(void) {
-    const char* TIME_FORMAT = "%%s %a %d %b %%s %H:%M:%S";
+    const char* TIME_FORMAT = " %%s  %a %d %b %H:%M:%S %%s  ";
     const char* COLOR       = "#b16286";
     char        bufferA[256], bufferB[64];
     time_t      t  = time(NULL);
