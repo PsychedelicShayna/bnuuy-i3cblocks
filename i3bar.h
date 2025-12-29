@@ -1,20 +1,22 @@
 #ifndef _I3BAR_H
 #define _I3BAR_H
 
+#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
-#define I3BAR_ALIGN_LEFT   "left"
-#define I3BAR_ALIGN_RIGHT  "right"
-#define I3BAR_ALIGN_CENTER "center"
+#define I3B_ALIGN_LEFT   "left"
+#define I3B_ALIGN_RIGHT  "right"
+#define I3B_ALIGN_CENTER "center"
 
 #include <stdbool.h>
 
+typedef enum { FALSE = 0, TRUE = 1, I3B_DEFAULT_BOOL = -1 } jboolean;
+
 typedef enum {
-    I3BAR_MIN_WIDTH_PIXELS,
-    I3BAR_MIN_WIDTH_TEXT,
-    I3BAR_MIN_WIDTH_NONE
+    I3B_MIN_WIDTH_PIXELS,
+    I3B_MIN_WIDTH_TEXT,
+    I3B_MIN_WIDTH_NONE
 } i3bar_proto_min_width_type;
 
 typedef struct {
@@ -22,7 +24,7 @@ typedef struct {
     union {
         int   pixels;
         char* text;
-    };
+    } u;
 } i3bar_proto_min_width;
 
 struct i3bar_proto_block {
@@ -91,7 +93,7 @@ struct i3bar_proto_block {
     /* A boolean which specifies whether the current value is urgent. Examples
      * are battery charge values below 1 percent or no more available disk space
      * (for non-root users). The presentation of urgency is up to i3bar.  */
-    bool urgent;
+    jboolean urgent;
 
     /* Every block should have a unique name (string) entry so that it can be
      * easily identified in scripts which process the output. i3bar completely
@@ -108,7 +110,7 @@ struct i3bar_proto_block {
      * this block. The default is true, meaning the separator line will be
      * drawn. Note that if you disable the separator line, there will still be a
      * gap after the block, unless you also use separator_block_width.  */
-    bool separator;
+    jboolean separator;
 
     /* The amount of pixels to leave blank after the block. In the middle of
      * this gap, a separator line will be drawn unless separator is disabled.
@@ -126,59 +128,36 @@ struct i3bar_proto_block {
     char* markup;
 };
 
-#define I3BAR_BORDER_DEFAULT 1
+#define I3B_DEFAULT_MIN_WIDTH_PIXELS      300
+#define I3B_DEFAULT_ALIGN                 I3B_ALIGN_LEFT
+#define I3B_DEFAULT_BORDER                1
+#define I3B_DEFAULT_SEPARATOR_BLOCK_WIDTH 9
+#define I3B_DEFAULT_SEPARATOR             true
+#define I3B_DEFAULT_MARKUP                "none"
+
+#define I3B_DEFAULT_INT INT32_MAX
 
 typedef struct i3bar_proto_block i3bar_block_t;
 
 void i3bar_block_init(i3bar_block_t* block) {
-    block->full_text     = "";
-    block->short_text    = "";
-    block->color         = "";
-    block->background    = "";
-    block->border        = "";
-    block->border_top    = I3BAR_BORDER_DEFAULT;
-    block->border_right  = I3BAR_BORDER_DEFAULT;
-    block->border_bottom = I3BAR_BORDER_DEFAULT;
-    block->border_left   = I3BAR_BORDER_DEFAULT;
-    block->min_width = (i3bar_proto_min_width) { .type = I3BAR_MIN_WIDTH_NONE };
-    block->align     = I3BAR_ALIGN_LEFT;
-    block->urgent    = false;
+    block->full_text     = NULL;
+    block->short_text    = NULL;
+    block->color         = NULL;
+    block->background    = NULL;
+    block->border        = NULL;
+    block->border_top    = I3B_DEFAULT_INT;
+    block->border_right  = I3B_DEFAULT_INT;
+    block->border_bottom = I3B_DEFAULT_INT;
+    block->border_left   = I3B_DEFAULT_INT;
+    block->min_width = (i3bar_proto_min_width) { .type = I3B_MIN_WIDTH_NONE };
+    block->align     = I3B_ALIGN_LEFT;
+    block->urgent    = I3B_DEFAULT_BOOL;
     block->name      = NULL;
     block->instance  = NULL;
-    block->separator = true;
-    block->separator_block_width = 9;
+    block->separator = I3B_DEFAULT_BOOL;
+    block->separator_block_width = I3B_DEFAULT_INT;
     block->markup                = "none";
 }
-
-// Outputs line by line, in order that fields are declared, ending at a null
-// value. Empty strings are treated as newlines.
-void i3bar_block_output_raw(i3bar_block_t* block) {
-    printf("%s\n", block->full_text);
-    printf("%s\n", block->short_text);
-    printf("%s\n", block->color);
-    printf("%s\n", block->background);
-    printf("%s\n", block->border);
-    printf("%d\n", block->border_top);
-    printf("%d\n", block->border_right);
-    printf("%d\n", block->border_bottom);
-    printf("%d\n", block->border_left);
-    // printf("%s\n", block->min_width);
-    if(block->min_width.pixels > 0) {
-        printf("%d\n", block->min_width.pixels);
-    } else if(block->min_width.text != NULL) {
-        printf("%s\n", block->min_width.text);
-    } else {
-        printf("0\n");
-    }
-    printf("%s\n", block->align);
-    printf("%s\n", block->urgent ? "true" : "false");
-    printf("%s\n", block->name ? block->name : "");
-    printf("%s\n", block->instance ? block->instance : "");
-    printf("%d\n", block->separator ? 1 : 0);
-    printf("%d\n", block->separator_block_width);
-    printf("%s\n", block->markup);
-}
-
 /*
 
    JSON Output Example:
@@ -207,7 +186,11 @@ markdown with the pango markup language"
 // Serialize any i3bar block to JSON format for i3bar consumption, including
 // only the fields that are set, and escaping strings with quotes or other
 // special characters as needed.
-void i3bar_block_output_json(i3bar_block_t* block) {
+void i3bar_block_output(i3bar_block_t* block) {
+    if(block->full_text == NULL || block->full_text[0] == '\0') {
+        block->full_text = "NULL";
+    }
+
     printf("{");
 
     bool first = true;
@@ -217,13 +200,11 @@ void i3bar_block_output_json(i3bar_block_t* block) {
         printf(", ");    \
     }
 
-#define OUTPUT_FIELD_STRING(field)                \
-    if(block->field && block->field[0] != '\0') { \
-        if(!first) {                              \
-            printf(", ");                         \
-        }                                         \
+#define OUTPUT_FIELD_STRING(field, value)         \
+    if(block->value && block->value[0] != '\0') { \
+        HANDLE_SEPARATOR                          \
         printf("\"" #field "\": \"");             \
-        for(char* p = block->field; *p; ++p) {    \
+        for(char* p = block->value; *p; ++p) {    \
             if(*p == '\"' || *p == '\\') {        \
                 printf("\\");                     \
             }                                     \
@@ -233,54 +214,50 @@ void i3bar_block_output_json(i3bar_block_t* block) {
         first = false;                            \
     }
 
-#define OUTPUT_FIELD_INT(field)                     \
-    if(block->field != 0) {                         \
-        if(!first) {                                \
-            printf(", ");                           \
-        }                                           \
-        printf("\"" #field "\": %d", block->field); \
+#define OUTPUT_FIELD_INT(field, value)              \
+    if(block->value != I3B_DEFAULT_INT) {           \
+        HANDLE_SEPARATOR                            \
+        printf("\"" #field "\": %d", block->value); \
         first = false;                              \
     }
 
-#define OUTPUT_FIELD_BOOL(field)                                       \
-    if(block->field) {                                                 \
-        if(!first) {                                                   \
-            printf(", ");                                              \
-        }                                                              \
-        printf("\"" #field "\": %s", block->field ? "true" : "false"); \
-        first = false;                                                 \
+#define OUTPUT_FIELD_BOOL(field, value)                                     \
+    if(block->value != I3B_DEFAULT_BOOL) {                                  \
+        HANDLE_SEPARATOR                                                    \
+        printf("\"" #field "\": %s", block->value >= 1 ? "true" : "false"); \
+        first = false;                                                      \
     }
 
-    OUTPUT_FIELD_STRING(full_text);
-    OUTPUT_FIELD_STRING(short_text);
-    OUTPUT_FIELD_STRING(color);
-    OUTPUT_FIELD_STRING(background);
-    OUTPUT_FIELD_STRING(border);
-    OUTPUT_FIELD_INT(border_top);
-    OUTPUT_FIELD_INT(border_right);
-    OUTPUT_FIELD_INT(border_bottom);
-    OUTPUT_FIELD_INT(border_left);
+    OUTPUT_FIELD_STRING(full_text, full_text);
+    OUTPUT_FIELD_STRING(short_text, short_text);
+    OUTPUT_FIELD_STRING(color, color);
+    OUTPUT_FIELD_STRING(background, background);
+    OUTPUT_FIELD_STRING(border, border);
+    OUTPUT_FIELD_INT(border_top, border_top);
+    OUTPUT_FIELD_INT(border_right, border_right);
+    OUTPUT_FIELD_INT(border_bottom, border_bottom);
+    OUTPUT_FIELD_INT(border_left, border_left);
 
     switch(block->min_width.type) {
-        case I3BAR_MIN_WIDTH_PIXELS:
-            OUTPUT_FIELD_INT(min_width.pixels)
+        case I3B_MIN_WIDTH_PIXELS:
+            OUTPUT_FIELD_INT(min_width, min_width.u.pixels)
             break;
-        case I3BAR_MIN_WIDTH_TEXT:
-            OUTPUT_FIELD_STRING(min_width.text)
+        case I3B_MIN_WIDTH_TEXT:
+            OUTPUT_FIELD_STRING(min_width, min_width.u.text)
             break;
         default:
             break;
     }
 
-    OUTPUT_FIELD_STRING(align);
-    OUTPUT_FIELD_BOOL(urgent);
-    OUTPUT_FIELD_STRING(name);
-    OUTPUT_FIELD_STRING(instance);
-    OUTPUT_FIELD_BOOL(separator);
-    OUTPUT_FIELD_INT(separator_block_width);
-    OUTPUT_FIELD_STRING(markup);
+    OUTPUT_FIELD_STRING(align, align);
+    OUTPUT_FIELD_BOOL(urgent, urgent);
+    OUTPUT_FIELD_STRING(name, name);
+    OUTPUT_FIELD_STRING(instance, instance);
+    OUTPUT_FIELD_BOOL(separator, separator);
+    OUTPUT_FIELD_INT(separator_block_width, separator_block_width);
+    OUTPUT_FIELD_STRING(markup, markup);
 
     printf("}\n");
 }
 
-#endif // !_I3BAR_H
+#endif // !_I3B_H
