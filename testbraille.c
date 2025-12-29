@@ -14,8 +14,7 @@ void cpu_usage_braille(void) {
         double usage = cpu_usage();
         history[idx] = usage;
         if(idx >= sizeof(history) / sizeof(history[0]) - 1) {
-            memcpy(history, &history[1], (sizeof(history) / sizeof(history[0]) - 1) * sizeof(history[0]));
-
+            memcpy(history, &history[1],  (sizeof(history) / sizeof(history[0]) - 1) * sizeof(history[0]));
         } else {
             idx++;
         }
@@ -25,7 +24,7 @@ void cpu_usage_braille(void) {
           braille_inline_chart(braille_chart,
                                sizeof(braille_chart) / sizeof(braille_chart[0]),
                                history,
-                               sizeof(history) / sizeof(history[0]));
+                               sizeof(history) / sizeof(history[0]), 0, 100);
 
         wprintf(L"CPU Usage: [");
         for(size_t i = 0; i < written; ++i) {
