@@ -12,10 +12,10 @@ QualifierAlignment: Left
 AllowAllArgumentsOnNextLine: "true"
 AllowAllConstructorInitializersOnNextLine: "true"
 AllowAllParametersOfDeclarationOnNextLine: "true"
-AllowShortBlocksOnASingleLine: "true"
+AllowShortBlocksOnASingleLine: "false"
 PackConstructorInitializers: Never
 AllowShortCaseLabelsOnASingleLine: "false"
-AllowShortFunctionsOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: "false"
 AllowShortLambdasOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: "true"
 AlwaysBreakAfterDefinitionReturnType: None
