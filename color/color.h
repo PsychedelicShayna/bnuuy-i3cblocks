@@ -16,6 +16,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "../common.h"
+
 typedef struct {
     uint8_t r, g, b;
 } Color;
@@ -60,13 +62,6 @@ static const GradientStep _null_GradientStep = { 0 };
 #include <stdio.h>
 
 #define JSON_OUTPUT_TEMPLATE "{\"full_text\": \"%s\", \"color\":\"%s\"}\n"
-
-void hexdump(void* data, size_t size) {
-    for(size_t i = 0; i < size; ++i) {
-        printf("%02lx", (uint64_t)(*((uint8_t*)data + i)));
-    }
-    printf("\n");
-}
 
 char* rgbx(Color color) {
     static char hex_color[8];

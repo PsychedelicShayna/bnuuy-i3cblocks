@@ -94,17 +94,79 @@ _______________________________________________________________________________
 
 clang-format on */
 
+/* ~~~~~~ Implementation Idea ~~~~~~
+ *
+ * we have a struct that holds its own buffer char* and a method where we
+ * supply it some text, along with a pango tag represented as a struct for
+ * tags that are complex like <span>, or just constants for italics, bold,
+ * underline, etc. The function should somehow give back the input string
+ * wrapped in the desired tag.
+ *
+ * Naively, we could just malloc and let the caller manage it but a better
+ * idea would be to have a large buffer in the struct, and that buffer will
+ * store multiple strings, and the struct will take care of resizing it when
+ * new tags are requested. Maybe like a string builder pattern, but with tags?
+ *
+ *
+ * We make a new pango feeder/string builder type thing.
+ *  - pango_t pango_new()
+ *
+ * We read the string we want to operate on into the buffer.
+ *  - pango_read(pango_t*, char* string)
+ *
+ * Operate on it with pango functions
+ *  - pango_span(pango_t*, pango_span_t*)
+ *  - pango_italics(pango_t*)
+ *
+ * Ask it how large of a buffer we need to store the result
+ *  - size_t pango_size(pango_t*)
+ *
+ * Then ask it to write the result out
+ *  - pango_write(pango_t*, char* out, char* szout)
+ *
+ *
+ *  Or maybe
+ *
+ *  We append new data to it with bitmask for simple tags, or just raw text
+ *  with regulra
+ *
+ * */
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <wchar.h>
+
+typedef struct {
+    char*    buffer;
+    wchar_t* wbuffer;
+    size_t   size;
+    size_t capacity;
+} pango_t;
+
+typedef enum {
+    PANGO_ITALICS   = 0x0000000001,
+    PANGO_BOLD      = 0x0000000002,
+    PANGO_UNDERLINE = 0x0000000004,
+    PANGO_STRIKE    = 0x0000000008,
+    PANGO_MONO      = 0x0000000010,
+    PANGO_SUB       = 0x0000000020,
+    PANGO_SUP       = 0x0000000040,
+    PANGO_SMALL     = 0x0000000080,
+    PANGO_BIG       = 0x0000000100
+} pango_tag_t;
+
+pango_t pango_new() {
+    pango_t p;
+    p.buffer = (char*)malloc(4096);
+    p.size = 0;
+    p.capacity = 4096;
 
 
+}
 
 
+// <sub>   - Subscript (lowered baseline, smaller size)
+// <sup>   - Superscript (raised baseline, smaller size)
+void pango_feed(pango_t* p, char* text, pango_tag_t tags) {
 
-
-
-
-
-
-
-
-
-
+}

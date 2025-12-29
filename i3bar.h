@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <wchar.h>
 
 #define I3B_ALIGN_LEFT   "left"
 #define I3B_ALIGN_RIGHT  "right"
@@ -39,7 +40,7 @@ struct i3bar_proto_block {
     /* The full_text will be displayed by i3bar on the status line.
      * This is the only required key. If full_text is an empty string,
      * the block will be skipped. */
-    char* full_text;
+    wchar_t* full_text;
 
     /* Where appropriate, the short_text (string) entry should also be provided.
      * It will be used in case the status line needs to be shortened because it
@@ -187,47 +188,63 @@ markdown with the pango markup language"
 // special characters as needed.
 void i3bar_block_output(i3bar_block_t* block) {
     if(block->full_text == NULL || block->full_text[0] == '\0') {
-        block->full_text = "NULL";
+        block->full_text = L"NULL";
     }
 
-    printf("{");
+    wprintf(L"{");
 
     bool first = true;
 
 #define HANDLE_SEPARATOR \
     if(!first) {         \
-        printf(", ");    \
+        wprintf(L", ");  \
     }
 
 #define OUTPUT_FIELD_STRING(field, value)         \
     if(block->value && block->value[0] != '\0') { \
         HANDLE_SEPARATOR                          \
-        printf("\"" #field "\": \"");             \
+        wprintf(L"\"" #field "\": \"");           \
         for(char* p = block->value; *p; ++p) {    \
             if(*p == '\"' || *p == '\\') {        \
-                printf("\\");                     \
+                wprintf(L"\\");                   \
             }                                     \
-            printf("%c", *p);                     \
+            wprintf(L"%c", *p);                   \
         }                                         \
-        printf("\"");                             \
+        wprintf(L"\"");                           \
         first = false;                            \
     }
 
-#define OUTPUT_FIELD_INT(field, value)              \
-    if(block->value != I3B_DEFAULT_INT) {           \
-        HANDLE_SEPARATOR                            \
-        printf("\"" #field "\": %d", block->value); \
-        first = false;                              \
+#define OUTPUT_FIELD_INT(field, value)                \
+    if(block->value != I3B_DEFAULT_INT) {             \
+        HANDLE_SEPARATOR                              \
+        wprintf(L"\"" #field "\": %d", block->value); \
+        first = false;                                \
     }
 
-#define OUTPUT_FIELD_BOOL(field, value)                                     \
-    if(block->value != I3B_DEFAULT_BOOL) {                                  \
-        HANDLE_SEPARATOR                                                    \
-        printf("\"" #field "\": %s", block->value >= 1 ? "true" : "false"); \
-        first = false;                                                      \
+#define OUTPUT_FIELD_BOOL(field, value)                                       \
+    if(block->value != I3B_DEFAULT_BOOL) {                                    \
+        HANDLE_SEPARATOR                                                      \
+        wprintf(L"\"" #field "\": %s", block->value >= 1 ? "true" : "false"); \
+        first = false;                                                        \
     }
 
-    OUTPUT_FIELD_STRING(full_text, full_text);
+    if(block->full_text && block->full_text[0] != '\0') {
+        if(!first) {
+            wprintf(L", ");
+        }
+        wprintf(L"\""
+                "full_text"
+                "\": \"");
+        for(wchar_t* p = block->full_text; *p; ++p) {
+            if(*p == '\"' || *p == '\\') {
+                wprintf(L"\\");
+            }
+            wprintf(L"%lc", *p);
+        }
+        wprintf(L"\"");
+        first = 0;
+    };
+
     OUTPUT_FIELD_STRING(short_text, short_text);
     OUTPUT_FIELD_STRING(color, color);
     OUTPUT_FIELD_STRING(background, background);
@@ -256,7 +273,7 @@ void i3bar_block_output(i3bar_block_t* block) {
     OUTPUT_FIELD_INT(separator_block_width, separator_block_width);
     OUTPUT_FIELD_STRING(markup, markup);
 
-    printf("}\n");
+    wprintf(L"}\n");
 }
 
 #endif // !_I3BAR_H
