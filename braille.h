@@ -159,7 +159,9 @@ static inline uint8_t classify(double v1, double v2) {
 
 /* clang-format off */
 static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
-                                          double*  data, size_t sz_data)
+                                          double*  data, size_t sz_data,
+                                          double dmin,double dmax
+                                          )
 { /* clang-format on */
 
     wchar_t chart[sz_dst];
@@ -167,6 +169,9 @@ static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
 
     double *min, *max;
     minmaxf(data, sz_data, &min, &max);
+
+    max = &dmax;
+    min = &dmin;
 
     for(size_t i = 0; i < sz_data; i++) {
         double v1 = data[i];
@@ -178,7 +183,7 @@ static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
         double norm2 = (v2 - *min) / (*max - *min);
         double perc2 = norm2 * 100;
 
-        uint8_t vcode   = classify(v1, v2);
+        uint8_t vcode   = classify(perc1, perc2);
         wchar_t braille = BRAILLE_TABLE[vcode];
         chart[idx++]    = braille;
 
@@ -193,14 +198,13 @@ static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
     return idx;
 }
 
-
 void test_braille_chart(void) {
     size_t ds     = 10;
     double data[] = { 13.0,   15.124,  50.1234, 19.123, 6.124,
                       62.234, 10000.0, 5000.0,  300.0,  700.0 };
 
     wchar_t chart[ds];
-    size_t  written = braille_inline_chart(chart, ds, data, ds);
+    size_t  written = braille_inline_chart(chart, ds, data, ds, 100, 0);
 
     for(size_t i = 0; i < written; ++i) {
         wprintf(L"%lc", chart[i]);

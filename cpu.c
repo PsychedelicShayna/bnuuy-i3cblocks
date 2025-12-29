@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,6 +6,8 @@
 #include <unistd.h>
 
 #include "color/color.h"
+
+#include "braille.h"
 
 #ifndef USLEEPFOR
 #define USLEEPFOR 1000000
@@ -110,20 +113,98 @@ double cpu_usage(void) {
 }
 
 void output(void) {
+    setlocale(LC_ALL, "");
     GradientStep* color_gradient = Gradient(
       Threshold(10.0, GREEN), Threshold(50.0, ORANGE), Threshold(100.0, RED));
+
+    const size_t history_size = 32;
+    double       history[history_size];
+    size_t       idx = 0;
+
+    for(size_t i = 0; i < history_size; ++i) {
+        history[i] = 0;
+    }
+
+    wchar_t chart[16] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀";
+
+    braille_inline_chart(
+      chart, sizeof(chart) / sizeof(chart[0]), history, history_size, 0, 100);
+
+    wprintf(L"CPU Usage: [");
+    for(size_t i = 0; i < 16; ++i) {
+        wprintf(L"%lc", chart[i]);
+    }
+
+    wprintf(L"] \n");
+    fflush(stdout);
+
+    char full_text[128];
+    char out[4096];
 
     while(1) {
         double usage     = cpu_usage();
         double frequency = cpu_frequency();
 
-        char full_text[64], out[256];
-        sprintf(full_text, "%.2lf%% %2.2lfGHz  ", usage, frequency);
+        memcpy(history,
+               &history[1],
+               31 * 8); // (sizeof(history) / sizeof(history[0]) - 1) *
+                        // sizeof(history[0]));
+        // if(idx >= sizeof(history) / sizeof(history[0]) - 1) {
+        // } else {
+        //     idx++;
+        // }
+
+        memcpy(history, &history[1], history_size - 1 * sizeof(double));
+        history[31] = usage;
+
+        size_t chart_written =
+          braille_inline_chart(chart,
+                               sizeof(chart) / sizeof(chart[0]),
+                               history,
+                               sizeof(history) / sizeof(history[0]),
+                               0,
+                               100);
+
+        memset(out, 0, 4096);
 
         const char* color_hex = map_to_color(usage, color_gradient);
-        sprintf(out, JSON_OUTPUT_TEMPLATE, full_text, color_hex);
+        sprintf(full_text,
+                "<span color=\\\"%s\\\"> "
+                "%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc %.2lf%% "
+                "%02.2lfGHz   </span>",
+                color_hex,
+                chart[0],
+                chart[1],
+                chart[2],
+                chart[3],
+                chart[4],
+                chart[5],
+                chart[6],
+                chart[7],
+                chart[8],
+                chart[9],
+                chart[10],
+                chart[11],
+                chart[12],
+                chart[13],
+                chart[14],
+                chart[15],
+                usage,
+                frequency);
 
-        fprintf(stdout, "%s", out);
+        // wprintf(L"CHART %zu [", chart_written);
+        // for(size_t i = 0; i < 16; i++) {
+        //     wprintf(L"%lc", chart[i]);
+        // }
+        // wprintf(L"]", full_text);
+        fflush(stdout);
+
+#define JSON_OUTPUT_TEMPLATE2 "{\"full_text\": \"%s\", \"markup\": \"pango\"}\n"
+        sprintf(out, JSON_OUTPUT_TEMPLATE2, full_text);
+
+        // fprintf(stdout, "%ls", out);
+
+        wprintf(L"%s", out);
         fflush(stdout);
 
         // We don't sleep here, since the sampling algorithm includes usleep
@@ -132,6 +213,7 @@ void output(void) {
 }
 
 int main(void) {
+    setlocale(LC_ALL, "");
     output();
     return EXIT_SUCCESS;
 }
