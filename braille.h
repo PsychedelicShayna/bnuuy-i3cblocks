@@ -119,7 +119,7 @@ static inline size_t braille_write(wchar_t* dst, size_t sz_dst,
 }
 
 static inline void
-  minmax(double* array, size_t sz_array, double** outmin, double** outmax) {
+  minmaxf(double* array, size_t sz_array, double** outmin, double** outmax) {
     double *min = array, *max = array;
 
     for(size_t i = 0; i < sz_array; ++i) {
@@ -134,33 +134,85 @@ static inline void
     *outmax = max;
 }
 
-/* clang-format off */
-static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
-                                          double*  data, size_t sz_data,
-                                          size_t   chart_length)
-{ /* clang-format on */
+static inline uint8_t classify(double v1, double v2) {
+    uint8_t c = 0;
+    if(v1 < 25)
+        c |= L1;
+    else if(v1 < 50)
+        c |= L2;
+    else if(v1 < 75)
+        c |= L3;
+    else if(v1 >= 75)
+        c |= L4;
 
-    wchar_t chart[chart_length];
+    if(v2 < 25)
+        c |= R1;
+    else if(v2 < 50)
+        c |= R2;
+    else if(v2 < 75)
+        c |= R3;
+    else if(v2 >= 75)
+        c |= R4;
 
-    double *min, *max;
-    minmax(data, sz_data, &min, &max);
-
-    for(size_t i = 0; i < sz_data; i++) {
-        double value      = data[i];
-        double normalized = (value - *min) / (*max - *min);
-        double percent    = normalized * 100;
-
-        // Brail is 4 tall max
-
-        // if(percent
-        //
-    }
+    return c;
 }
 
+/* clang-format off */
+static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
+                                          double*  data, size_t sz_data)
+{ /* clang-format on */
+
+    wchar_t chart[sz_dst];
+    size_t  idx = 0;
+
+    double *min, *max;
+    minmaxf(data, sz_data, &min, &max);
+
+    for(size_t i = 0; i < sz_data; i++) {
+        double v1 = data[i];
+        double v2 = data[i + 1 < sz_data ? i + 1 : i];
+
+        double norm1 = (v1 - *min) / (*max - *min);
+        double perc1 = norm1 * 100;
+
+        double norm2 = (v2 - *min) / (*max - *min);
+        double perc2 = norm2 * 100;
+
+        uint8_t vcode   = classify(v1, v2);
+        wchar_t braille = BRAILLE_TABLE[vcode];
+        chart[idx++]    = braille;
+
+        if(idx >= sz_dst) {
+            break;
+        }
+
+        i++;
+    }
+
+    memcpy(dst, chart, sz_dst * sizeof(wchar_t));
+    return idx;
+}
+
+
+void test_braille_chart(void) {
+    size_t ds     = 10;
+    double data[] = { 13.0,   15.124,  50.1234, 19.123, 6.124,
+                      62.234, 10000.0, 5000.0,  300.0,  700.0 };
+
+    wchar_t chart[ds];
+    size_t  written = braille_inline_chart(chart, ds, data, ds);
+
+    for(size_t i = 0; i < written; ++i) {
+        wprintf(L"%lc", chart[i]);
+        fflush(stdout);
+    }
+
+    wprintf(L"\n");
+}
 /*
 
-void minmax(double* array, size_t sz_array, double** outmin, double** outmax) {
-    double *min = array, *max = array;
+void minmax(double* array, size_t sz_array, double** outmin, double**
+outmax) { double *min = array, *max = array;
 
     for(size_t i = 0; i < sz_array; ++i) {
         if(array[i] > *max) {
@@ -175,7 +227,8 @@ void minmax(double* array, size_t sz_array, double** outmin, double** outmax) {
 }
 
 size_t ds = 7;
-   double data[] = { 13.0, 15.124, 50.1234, 19.123, 6.124, 62.234, 10000.0 };
+   double data[] = { 13.0, 15.124, 50.1234, 19.123, 6.124, 62.234, 10000.0
+};
 
    double *min, *max;
    minmax(data, ds, &min, &max);
