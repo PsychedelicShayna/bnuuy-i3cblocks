@@ -5,9 +5,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "color/color.h"
-
 #include "braille.h"
+#include "color/color.h"
+#include "i3bar.h"
 
 #ifndef USLEEPFOR
 #define USLEEPFOR 1000000
@@ -118,94 +118,64 @@ void output(void) {
       Threshold(10.0, GREEN), Threshold(50.0, ORANGE), Threshold(100.0, RED));
 
     const size_t history_size = 32;
-    double       history[history_size];
-    size_t       idx = 0;
 
-    for(size_t i = 0; i < history_size; ++i) {
-        history[i] = 0;
+    double history[history_size];
+
+    Color color_history[history_size];
+    for(size_t i = 0; i < history_size; i++) {
+        color_history[i] = GREEN;
+        history[i]       = 0.0;
     }
 
-    wchar_t chart[16] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀";
+    wchar_t chart[17] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀\0";
 
     braille_inline_chart(
       chart, sizeof(chart) / sizeof(chart[0]), history, history_size, 0, 100);
 
-    wprintf(L"CPU Usage: [");
-    for(size_t i = 0; i < 16; ++i) {
-        wprintf(L"%lc", chart[i]);
-    }
+    size_t full_text_size = 256;
+    char   full_text[full_text_size * sizeof(char)];
 
-    wprintf(L"] \n");
-    fflush(stdout);
-
-    char full_text[128];
-    char out[4096];
+    i3bar_block_t block;
+    i3bar_block_init(&block);
+    block.markup = "pango";
 
     while(1) {
         double usage     = cpu_usage();
         double frequency = cpu_frequency();
+        Color  color     = map_to_color(usage, color_gradient);
 
-        memcpy(history,
-               &history[1],
-               31 * 8); // (sizeof(history) / sizeof(history[0]) - 1) *
-                        // sizeof(history[0]));
-        // if(idx >= sizeof(history) / sizeof(history[0]) - 1) {
-        // } else {
-        //     idx++;
-        // }
+        memcpy(history, &history[1], (history_size - 1) * sizeof(double));
 
-        memcpy(history, &history[1], history_size - 1 * sizeof(double));
-        history[31] = usage;
+        memcpy(
+          color_history, &color_history[1], (history_size - 1) * sizeof(Color));
 
-        size_t chart_written =
-          braille_inline_chart(chart,
-                               sizeof(chart) / sizeof(chart[0]),
-                               history,
-                               sizeof(history) / sizeof(history[0]),
-                               0,
-                               100);
+        history[31]       = usage;
+        color_history[31] = color;
 
-        memset(out, 0, 4096);
+        braille_inline_chart(chart,
+                             (sizeof(chart) - 1) / sizeof(chart[0]),
+                             history,
+                             sizeof(history) / sizeof(history[0]),
+                             0,
+                             100);
 
-        const char* color_hex = map_to_color(usage, color_gradient);
+        const char* color_hex = rgbx(color);
+
         sprintf(full_text,
-                "<span color=\\\"%s\\\"> "
-                "%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc%lc %.2lf%% "
+                "<span color=\"%s\"> "
+                "%ls %.2lf%% "
                 "%02.2lfGHz   </span>",
                 color_hex,
-                chart[0],
-                chart[1],
-                chart[2],
-                chart[3],
-                chart[4],
-                chart[5],
-                chart[6],
-                chart[7],
-                chart[8],
-                chart[9],
-                chart[10],
-                chart[11],
-                chart[12],
-                chart[13],
-                chart[14],
-                chart[15],
+                &chart[0],
                 usage,
                 frequency);
 
-        // wprintf(L"CHART %zu [", chart_written);
-        // for(size_t i = 0; i < 16; i++) {
-        //     wprintf(L"%lc", chart[i]);
-        // }
-        // wprintf(L"]", full_text);
-        fflush(stdout);
+        wchar_t full_text_w[full_text_size];
+        memset(full_text_w, 0, full_text_size * sizeof(wchar_t));
 
-#define JSON_OUTPUT_TEMPLATE2 "{\"full_text\": \"%s\", \"markup\": \"pango\"}\n"
-        sprintf(out, JSON_OUTPUT_TEMPLATE2, full_text);
-
-        // fprintf(stdout, "%ls", out);
-
-        wprintf(L"%s", out);
-        fflush(stdout);
+        mbstowcs(full_text_w, full_text, sizeof(full_text));
+        block.full_text = full_text_w;
+        i3bar_block_output(&block);
 
         // We don't sleep here, since the sampling algorithm includes usleep
         // in order to get two relative samples to calculate usgae.

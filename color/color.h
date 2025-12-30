@@ -134,7 +134,7 @@ char* rgbx(Color color) {
 //     return default_color;
 // }
 
-static inline char* map_to_color(double value, GradientStep steps[]) {
+static inline Color map_to_color(double value, GradientStep steps[]) {
     size_t length = 0;
 
     for(size_t i = 0; i < INT16_MAX; i++) {
@@ -149,7 +149,7 @@ static inline char* map_to_color(double value, GradientStep steps[]) {
         // baseline color until we exceed the first threshold.
         if(i == 0) {
             if(value < steps[i].thresh) {
-                return rgbx(steps[i].color);
+                return steps[i].color;
             }
 
             continue;
@@ -181,7 +181,7 @@ static inline char* map_to_color(double value, GradientStep steps[]) {
             result.g = (uint8_t)g;
             result.b = (uint8_t)b;
 
-            return rgbx(result);
+            return result;
         }
 
         printf("%f, %d %d %d",
@@ -191,14 +191,18 @@ static inline char* map_to_color(double value, GradientStep steps[]) {
                steps[0].color.b);
     }
 
-    return length > 0 ? rgbx(steps[length - 1].color) : "#FFFFFF";
+    return length > 0 ? steps[length - 1].color : RED;
+}
+
+static inline char* map_to_color_hex(double value, GradientStep steps[]) {
+    return rgbx(map_to_color(value, steps));
 }
 
 void x(void) {
-    map_to_color(50.0,
-                 Gradient(Threshold(20.0, GREEN),
-                          Threshold(50.0, ORANGE),
-                          Threshold(10.0, RED)));
+    map_to_color_hex(50.0,
+                     Gradient(Threshold(20.0, GREEN),
+                              Threshold(50.0, ORANGE),
+                              Threshold(10.0, RED)));
 }
 
 // if(value < 10.0) {

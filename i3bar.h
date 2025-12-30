@@ -274,6 +274,7 @@ void i3bar_block_output(i3bar_block_t* block) {
     OUTPUT_FIELD_STRING(markup, markup);
 
     wprintf(L"}\n");
+    fflush(stdout);
 }
 
 #endif // !_I3BAR_H

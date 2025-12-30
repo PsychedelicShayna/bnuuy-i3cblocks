@@ -120,7 +120,7 @@ void output(void) {
         char full_text[64], out[256];
         sprintf(full_text, "%.2lf%% %2.2lfGHz  ", usage, frequency);
 
-        const char* color_hex = map_to_color(usage, color_gradient);
+        const char* color_hex = map_to_color_hex(usage, color_gradient);
         sprintf(out, JSON_OUTPUT_TEMPLATE, full_text, color_hex);
 
         fprintf(stdout, "%s", out);
