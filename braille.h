@@ -159,10 +159,36 @@ static inline uint8_t classify(double v1, double v2)
     return c;
 }
 
-/* clang-format off */
-static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
-                                          double*  data, size_t sz_data,
-                                          double dmin, double dmax)
+// clang-format off
+
+/* Writes a braille chart to `wchar_t* outchart` derived from the
+ * doubles within `double* data`.
+ *
+ * `-`
+ *
+ * The `outlen` is the length, not the size, of `out` meaning it is the amount 
+ * of `wchar_t` that `out` can hold and the same goes for `len` as the amount 
+ * of `double` in `data`. 
+ *
+ * `-`
+ *
+ * The last `wchar_t` written to the `out` buffer will be a null terminator 
+ * therefore if you want a chart with a length of 16 braille characters, you 
+ * should make a `wchar_t[17]`.
+ *
+ * `-`
+ *
+ * The `dmin` and `dmax` doubles are fixed lower and upper bounds for the chart
+ * that determine what the relative value of each double in `data` is between
+ * the two bounds. If any of the two have a negative value then the bounds are
+ * updated dynamically based on the minimum and maximum value in data. It is
+ * reasonable to set `dmin` to `0.0` and `dmax` to `100.0` if you want the chart
+ * to always represent an absolute percentage.
+ *
+ * */
+static inline size_t write_braille_chart(wchar_t* out,  size_t outlen,
+                                          double* data, size_t len,
+                                          double  dmin, double dmax)
 { /* clang-format on */
 
     wchar_t chart[outlen];
