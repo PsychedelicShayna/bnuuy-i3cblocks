@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <unistdio.h>
+#include <wchar.h>
+#include <stdlib.h>
 
 #include "common.h"
 
@@ -17,7 +20,7 @@ int main(void) {
     while(1) {
         iters++;
 
-        size_t random_count = 150;
+        size_t random_count = 32;
 
         uint8_t random_bytes[random_count];
         urandom(random_bytes, random_count);
@@ -43,10 +46,10 @@ int main(void) {
         // Write the formatted Pango string containing the random braille to
         // the block_text_mb multibyte string buffer. This has to be a char
         // and not wchar_t buffer because I have not found a "wsprintf"
-        sprintf(block_text_mb,
-                "<b><span color='%s'>%ls</span></b>",
-                rgbx(GREEN),
-                random_braille);
+        // sprintf(block_text_mb,
+        //         "<b><span color='%s'>%ls</span></b>",
+        //         rgbx(GREEN),
+        //         random_braille);
 
         // Using the same size as that of the multibyte is sure to give us
         // more space than the multibyte buffer because these will be treated
@@ -55,6 +58,14 @@ int main(void) {
         size_t  block_size_w = block_size_mb;
         wchar_t block_text_w[block_size_w];
         memset(block_text_w, 0, block_size_w);
+
+        // swprintf_s();
+
+        swprintf(wchar_t *restrict s, size_t n, const wchar_t *restrict format, ...)
+        u32_u32_(block_text_w,
+                L"<b><span color='%s'>%ls</span></b>",
+                rgbx(GREEN),
+                random_braille);
 
         // Convert: block_text_mb -> block_text_w
         mbstowcs(block_text_w, block_text_mb, block_size_w);

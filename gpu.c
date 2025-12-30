@@ -65,7 +65,7 @@ static inline void output(void) {
         char full_text[64], out[256];
         sprintf(full_text, "%2.u%% %u°C  ", utilization, temperature);
 
-        const char* color_hex = map_to_color(metrics.temperature, gradient);
+        const char* color_hex = map_to_color_hex(metrics.temperature, gradient);
         sprintf(out, JSON_OUTPUT_TEMPLATE, full_text, color_hex);
 
         fprintf(stdout, "%s", out);

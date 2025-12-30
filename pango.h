@@ -157,13 +157,6 @@ typedef enum { STYLE_REGULAR, STYLE_OBLIQUE, STYLE_ITALIC } pango_style_t;
 #define PANGO_ULINE_ERROR  "error":
 
 typedef struct {
-    char*    buffer;
-    wchar_t* wbuffer;
-    size_t   size;
-    size_t   capacity;
-} pango_t;
-
-typedef struct {
     // CSS color (`#rrggbb`, `rgb()`, named colors)
     char* foregruond;
 
@@ -209,35 +202,72 @@ typedef struct {
     float scale;
 } pango_span_t;
 
-void X(void) {
+void X(void)
+{
     pango_span_t x = (pango_span_t) { .weight = PANGO_WEIGHT_BOLD };
 }
 
 typedef enum {
-    PANGO_ITALICS   = 0x0000000001,
-    PANGO_BOLD      = 0x0000000002,
-    PANGO_UNDERLINE = 0x0000000004,
-    PANGO_STRIKE    = 0x0000000008,
-    PANGO_MONO      = 0x0000000010,
-    PANGO_SUB       = 0x0000000020,
-    PANGO_SUP       = 0x0000000040,
-    PANGO_SMALL     = 0x0000000080,
-    PANGO_BIG       = 0x0000000100
+    PSBT_NULL = 0x0000,
+    PSBT_ITAL = 0x0001,
+    PSBT_BOLD = 0x0002,
+    PSBT_ULIN = 0x0004,
+    PSBT_STRK = 0x0008,
+    PSBT_MONO = 0x0010,
+    PSBT_SUB  = 0x0020,
+    PSBT_SUP  = 0x0040,
+    PSBT_SMAL = 0x0080,
+    PSBT_BIG  = 0x0100
 } pango_tag_t;
 
-pango_t pango_new() {
-    pango_t p;
-    p.buffer   = (char*)malloc(4096);
-    p.size     = 0;
-    p.capacity = 4096;
+typedef struct {
+    wchar_t* wbuf;
+    size_t   size;
+    size_t   cap;
+} pangosb_t;
+
+pangosb_t new_pango_builder()
+{
+    pangosb_t p;
+
+    // p.wbuf   = (char*)malloc(4096);
+    // p.size     = 0;
+    // p.capacity = 4096;
 }
 
-// <sub>   - Subscript (lowered baseline, smaller size)
-// <sup>   - Superscript (raised baseline, smaller size)
-void pango_feed(pango_t* p, char* text, pango_tag_t tags) {
+/* Pushes a wide string (`wchar_t* wstr`) of size `wstr_sz` to the pango
+ * string builder `psb` wrapped in the tags specified by the `pango_tag_t`
+ * bitmask, which can be `PSBT_NULL (0)` for no tags, or can house various
+ * tags which will be nested, e.g. `PSBT_ITAL | PSBT_BOLD`
+ *
+ * `-`
+ *
+ * For spans, provide a `pango_span_t*`, or `NULL` for no span. To make a basic
+ * span for foreground color: `&(pango_tag_t) { .foreground="#FF00FF" }`.
+ *
+ * `-`
+ *
+ * This function returns the same `pangosb_t*` that was passed in as `psb`
+ * so that calls can be chained.
+ * */
+pangosb_t* pangosb_push_wstr(pangosb_t*    psb,
+                             wchar_t*      wstr,
+                             size_t        wstr_sz,
+                             pango_tag_t   tags,
+                             pango_span_t* span)
+
+{
+
+
+
+    return psb;
 }
 
-void hypoothetical() {
+void hypoothetical(void)
+{
+
+    pangosb_push_wstr(
+      0, 0, 0, PSBT_NULL, &(pango_span_t) { .foregruond = "red" });
 
     wchar_t* brwc    = NULL;
     size_t   sz_brwc = 0;
