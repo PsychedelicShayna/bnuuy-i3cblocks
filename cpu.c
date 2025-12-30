@@ -13,6 +13,11 @@
 #define USLEEPFOR 1000000
 #endif
 
+#ifdef USLEEPFOR
+#undef USLEEPFOR
+#define USLEEPFOR 500000
+#endif
+
 #ifndef CHARTSIZE
 #define CHARTSIZE 17
 #endif
@@ -129,20 +134,22 @@ void output(void)
     GradientStep* color_gradient = Gradient(
       Threshold(10.0, GREEN), Threshold(50.0, ORANGE), Threshold(100.0, RED));
 
-    const size_t history_size = 32;
-
     double history[32];
-    Color  color_history[sizeof(history) / sizeof(history[0])];
+    Color  chistory[sizeof(history) / sizeof(history[0])];
 
-    for(size_t i = 0; i < history_size; i++) {
-        color_history[i] = GREEN;
-        history[i]       = 0.0;
+    for(size_t i = 0; i < sizeof(history) / sizeof(history[0]); i++) {
+        chistory[i] = GREEN;
+        history[i]  = 0.0;
     }
 
     wchar_t chart[CHARTSIZE] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀";
 
-    write_braille_chart(
-      chart, sizeof(chart) / sizeof(chart[0]), history, history_size, 0, 100);
+    write_braille_chart(chart,
+                        sizeof(chart) / sizeof(chart[0]),
+                        history,
+                        sizeof(history) / sizeof(history[0]),
+                        -1,
+                        -1);
 
     i3bar_block_t block;
     i3bar_block_init(&block);
@@ -153,17 +160,18 @@ void output(void)
         double frequency = cpu_frequency();
         Color  color     = map_to_color(usage, color_gradient);
 
-        memmove(history, &history[1], (history_size - 1) * sizeof(double));
+        memmove(history, &history[1], sizeof(history) - sizeof(double));
+        memmove(chistory, &chistory[1], sizeof(chistory) - sizeof(Color));
 
-        history[31]       = usage;
-        color_history[31] = color;
+        history[31]  = usage;
+        chistory[31] = color;
 
         write_braille_chart(chart,
                             sizeof(chart) / sizeof(chart[0]),
                             history,
                             sizeof(history) / sizeof(history[0]),
-                            0,
-                            100);
+                            -1,
+                            -1);
 
         const char*    color_hex = rgbx(color);
         static wchar_t full_text[256];
