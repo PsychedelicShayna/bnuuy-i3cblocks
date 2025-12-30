@@ -203,6 +203,7 @@ size_t write_braille_chart(wchar_t* out, size_t outlen,
     // Discovering that isn't gonna make me conform to some existing algorithm
     // I'm calling it temperature! It makes sense! Like.. a hot red barrel of
     // a rotating minigun that slowly takes time to cool back down post fire!
+
     static double current_temp_max = 0.0;
     static double current_temp_min = 0.0;
 
@@ -236,121 +237,6 @@ size_t write_braille_chart(wchar_t* out, size_t outlen,
 
     local_min = &current_temp_min;
     local_max = &current_temp_max;
-
-    // Below is the old approach that just keeps a rolling memory of past
-    // values and uses those to calculate min and max, before we had a
-    // Double_stack type. We'll keep it for reference, as we make the new
-    // one above it, with Dobule_stack.
-
-    // static double* memory  = NULL;
-    // static size_t  memsize = 0;
-    // static size_t  memlen  = 0;
-    // static size_t  memidx  = 0;
-    //
-    //
-    // if(dmax < 0.0 || dmin < 0.0) {
-    //     minmaxf(data, len, &local_min, &local_max);
-    //
-    //     if(memory == NULL) {
-    //         size_t ml = (len) + len / 4;
-    //         memsize   = (sizeof(double) * (ml)) + (sizeof(double) * 2);
-    //         memlen    = (ml);
-    //         memidx    = 0;
-    //         memory    = malloc(memsize);
-    //         memset(memory, 0, memsize);
-    //         // memcpy(memory, data, sizeof(double) * len);
-    //     }
-    //
-    //     memory[memidx]     = 1.0;
-    //     memory[memidx + 1] = *local_max;
-    //     memidx += 2;
-    //
-    //     if(memidx >= memlen) {
-    //         memidx = 0;
-    //     }
-    //
-    //     // double* nullme;
-    //
-    //     static double mins[20];
-    //     static double maxs[20];
-    //     static double avg_mins[20];
-    //     static double avg_maxs[20];
-    //     static size_t avg_idx = 0;
-    //     static size_t mm_idx  = 0;
-    //
-    //     if(avg_idx == 0 && mm_idx == 0) {
-    //         for(size_t i = 0; i < 20; ++i) {
-    //             mins[i]     = *local_min;
-    //             maxs[i]     = *local_max;
-    //             avg_mins[i] = *local_min;
-    //             avg_maxs[i] = *local_max;
-    //         }
-    //     }
-    //
-    //     if(avg_idx >= 20) {
-    //         avg_idx = 19;
-    //
-    //         memmove(avg_mins, &avg_mins[1], 19 * sizeof(double));
-    //         memmove(avg_maxs, &avg_maxs[1], 19 * sizeof(double));
-    //     }
-    //
-    //     if(mm_idx >= 20) {
-    //         mm_idx = 19;
-    //
-    //         memmove(mins, &mins[1], 19 * sizeof(double));
-    //         memmove(maxs, &maxs[1], 19 * sizeof(double));
-    //     }
-    //
-    //     if(mm_idx < 20) {
-    //         mins[mm_idx] = *local_min;
-    //         maxs[mm_idx] = *local_max;
-    //         mm_idx++;
-    //     }
-    //
-    //     // Recalculate min and max as averages
-    //     double sum_min = 0.0;
-    //     double sum_max = 0.0;
-    //
-    //     for(size_t i = 0; i < mm_idx; ++i) {
-    //         sum_min += mins[i];
-    //         sum_max += maxs[i];
-    //     }
-    //
-    //     double avg_min = sum_min / (double)(mm_idx);
-    //     double avg_max = sum_max / (double)(mm_idx);
-    //
-    //     if(avg_idx < 20) {
-    //         avg_mins[avg_idx] = avg_min;
-    //         avg_maxs[avg_idx] = avg_max;
-    //         avg_idx++;
-    //     }
-    //
-    //     static double combined[40];
-    //     memcpy(combined, avg_mins, sizeof(double) * avg_idx);
-    //     memcpy(&combined[avg_idx], avg_maxs, sizeof(double) * avg_idx);
-    //
-    //     // double both[40+len];
-    //
-    //     // memcpy(both, memory, memsize);
-    //     // memcpy(both, combined, 40*sizeof(double));
-    //     // memcpy(both+40, data, len*sizeof(double));
-    //
-    //     // minmaxf(both, 40+len, &min, &max);
-    //     minmaxf(combined, 20, &local_min, &local_max);
-    //
-    //     if(*local_max < 10.0) {
-    //         *local_max = 10.0;
-    //     }
-    //
-    //     if(*local_min < 1.0) {
-    //         *local_min = 1.0;
-    //     }
-    // } else {
-    //     local_max = &dmax;
-    //     local_min = &dmin;
-    // }
-
-    // -----------------------------------------------------------------------
 
     wchar_t chart[outlen];
     chart[outlen - 1] = L'\0';
@@ -401,42 +287,3 @@ void test_braille_chart(void)
 
     wprintf(L"\n");
 }
-/*
-
-void minmax(double* array, size_t sz_array, double** outmin, double**
-outmax) { double *min = array, *max = array;
-
-    for(size_t i = 0; i < sz_array; ++i) {
-        if(array[i] > *max) {
-            max = &array[i];
-        } else if(array[i] < *min) {
-            min = &array[i];
-        }
-    }
-
-    *outmin = min;
-    *outmax = max;
-}
-
-size_t ds = 7;
-   double data[] = { 13.0, 15.124, 50.1234, 19.123, 6.124, 62.234, 10000.0
-};
-
-   double *min, *max;
-   minmax(data, ds, &min, &max);
-
-   for(int i =0; i<ds;++i) {
-   double value = data[i];
-        double normalized = (value - *min) / (*max - *min);
-    printf("%lf %lf %lf %lf\n", data[i], *min,*max, data[i] / *max);
-    printf("Mapped: %lf %lf\n", 4.0 / (data[i] / *max)*100, 4.0 / (data[i] /
-*max))  ; printf("Norm :%lf\n", (normalized*100.0)/4.0);
-   }
-
-
-
-
-
-
-
- */
