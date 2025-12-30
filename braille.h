@@ -165,25 +165,28 @@ static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
                                           double dmin, double dmax)
 { /* clang-format on */
 
-    wchar_t chart[sz_dst];
-    size_t  idx = 0;
+    wchar_t chart[outlen];
+    chart[outlen - 1] = L'\0';
+
+    size_t idx = 0;
 
     double *min, *max;
-    minmaxf(data, sz_data, &min, &max);
 
-    max = &dmax;
-    min = &dmin;
+    if(dmax < 0.0 || dmin < 0.0) {
+        minmaxf(data, len, &min, &max);
+    } else {
+        max = &dmax;
+        min = &dmin;
+    }
 
     size_t i = 0;
 
     do {
-        // for(size_t i = 0; i < sz_data;) {
-
-        if(i >= sz_data)
+        if(i >= len)
             break;
 
         double v1 = data[i];
-        double v2 = data[i + 1 < sz_data ? i + 1 : i];
+        double v2 = data[i + 1 < len ? i + 1 : i];
 
         double norm1 = (v1 - *min) / (*max - *min);
         double perc1 = norm1 * 100;
@@ -198,9 +201,9 @@ static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
         idx++;
 
         i += 2;
-    } while(idx < sz_dst);
+    } while(idx < (outlen - 1));
 
-    memcpy(dst, &chart, sz_dst * sizeof(wchar_t));
+    memcpy(out, &chart, outlen * sizeof(wchar_t));
     return idx;
 }
 
@@ -211,7 +214,7 @@ void test_braille_chart(void)
                       62.234, 10000.0, 5000.0,  300.0,  700.0 };
 
     wchar_t chart[ds];
-    size_t  written = braille_inline_chart(chart, ds, data, ds, 100, 0);
+    size_t  written = write_braille_chart(chart, ds, data, ds, 100, 0);
 
     for(size_t i = 0; i < written; ++i) {
         wprintf(L"%lc", chart[i]);

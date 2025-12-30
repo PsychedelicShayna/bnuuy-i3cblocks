@@ -125,26 +125,24 @@ double cpu_usage(void)
 void output(void)
 {
     setlocale(LC_ALL, "");
+
     GradientStep* color_gradient = Gradient(
       Threshold(10.0, GREEN), Threshold(50.0, ORANGE), Threshold(100.0, RED));
 
     const size_t history_size = 32;
 
     double history[32];
-    Color  color_history[sizeof(history)/sizeof(history[0])];
+    Color  color_history[sizeof(history) / sizeof(history[0])];
 
     for(size_t i = 0; i < history_size; i++) {
         color_history[i] = GREEN;
         history[i]       = 0.0;
     }
 
-    wchar_t chart[CHARTSIZE] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀\0";
+    wchar_t chart[CHARTSIZE] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀";
 
-    braille_inline_chart(
+    write_braille_chart(
       chart, sizeof(chart) / sizeof(chart[0]), history, history_size, 0, 100);
-
-    // const size_t full_text_size = 256;
-    // static char full_text[256];
 
     i3bar_block_t block;
     i3bar_block_init(&block);
@@ -155,48 +153,32 @@ void output(void)
         double frequency = cpu_frequency();
         Color  color     = map_to_color(usage, color_gradient);
 
-        // memccpy(void *, const void *, int, unsigned long)
-        memmove(history,
-                &history[1],
-                (history_size-1)*sizeof(double));
+        memmove(history, &history[1], (history_size - 1) * sizeof(double));
 
-        // memcpy(history, &history[1], (history_size - 1) * sizeof(double));
-
-        // memcpy(
-        //   color_history, &color_history[1], (history_size - 1) *
-        //   sizeof(Color));
-        //
         history[31]       = usage;
         color_history[31] = color;
 
-        // (sizeof(chart)/4);
-        braille_inline_chart(chart,
-                             ((sizeof(chart) / sizeof(chart[0]))-1),
-                             history,
-                             (sizeof(history) / sizeof(history[0])),
-                             0,
-                             100);
-        chart[16] = L'\0';
+        write_braille_chart(chart,
+                            sizeof(chart) / sizeof(chart[0]),
+                            history,
+                            sizeof(history) / sizeof(history[0]),
+                            0,
+                            100);
 
-        const char* color_hex = rgbx(color);
+        const char*    color_hex = rgbx(color);
+        static wchar_t full_text[256];
 
-        wchar_t full_text_w[256];
-        memset(full_text_w, 0, sizeof(full_text_w));
+        swprintf(full_text,
+                 sizeof(full_text) - 1,
+                 L"<span color=\"%s\"> "
+                 L"%ls %.2lf%% "
+                 L"%02.2lfGHz   </span>",
+                 color_hex,
+                 &chart[0],
+                 usage,
+                 frequency);
 
-        swprintf(full_text_w,
-                sizeof(full_text_w)-1,
-                L"<span color=\"%s\"> "
-                L"%ls %.2lf%% "
-                L"%02.2lfGHz   </span>",
-                color_hex,
-                &chart[0],
-                usage,
-                frequency);
-
-        full_text_w[255] = L'\0';
-
-        // mbstowcs(full_text_w, full_text, sizeof(full_text));
-        block.full_text = full_text_w;
+        block.full_text = full_text;
         i3bar_block_output(&block);
 
         // We don't sleep here, since the sampling algorithm includes usleep
