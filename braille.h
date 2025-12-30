@@ -239,7 +239,7 @@ size_t write_braille_chart(wchar_t* out, size_t outlen,
     local_max = &current_temp_max;
 
     wchar_t chart[outlen];
-    chart[outlen - 1] = L'\0';
+    memset(chart, 0, sizeof(chart));
 
     size_t idx = 0;
     size_t i   = 0;
