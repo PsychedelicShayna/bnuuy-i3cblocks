@@ -119,7 +119,8 @@ static inline size_t braille_write(wchar_t* dst, size_t sz_dst,
 }
 
 static inline void
-  minmaxf(double* array, size_t sz_array, double** outmin, double** outmax) {
+  minmaxf(double* array, size_t sz_array, double** outmin, double** outmax)
+{
     double *min = array, *max = array;
 
     for(size_t i = 0; i < sz_array; ++i) {
@@ -134,7 +135,8 @@ static inline void
     *outmax = max;
 }
 
-static inline uint8_t classify(double v1, double v2) {
+static inline uint8_t classify(double v1, double v2)
+{
     uint8_t c = 0;
     if(v1 < 25)
         c |= L1;
@@ -160,8 +162,7 @@ static inline uint8_t classify(double v1, double v2) {
 /* clang-format off */
 static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
                                           double*  data, size_t sz_data,
-                                          double dmin,double dmax
-                                          )
+                                          double dmin, double dmax)
 { /* clang-format on */
 
     wchar_t chart[sz_dst];
@@ -173,7 +174,14 @@ static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
     max = &dmax;
     min = &dmin;
 
-    for(size_t i = 0; i < sz_data; i++) {
+    size_t i = 0;
+
+    do {
+        // for(size_t i = 0; i < sz_data;) {
+
+        if(i >= sz_data)
+            break;
+
         double v1 = data[i];
         double v2 = data[i + 1 < sz_data ? i + 1 : i];
 
@@ -185,20 +193,19 @@ static inline size_t braille_inline_chart(wchar_t* dst, size_t sz_dst,
 
         uint8_t vcode   = classify(perc1, perc2);
         wchar_t braille = BRAILLE_TABLE[vcode];
-        chart[idx++]    = braille;
 
-        if(idx >= sz_dst) {
-            break;
-        }
+        chart[idx] = braille;
+        idx++;
 
-        i++;
-    }
+        i += 2;
+    } while(idx < sz_dst);
 
-    memcpy(dst, chart, sz_dst * sizeof(wchar_t));
+    memcpy(dst, &chart, sz_dst * sizeof(wchar_t));
     return idx;
 }
 
-void test_braille_chart(void) {
+void test_braille_chart(void)
+{
     size_t ds     = 10;
     double data[] = { 13.0,   15.124,  50.1234, 19.123, 6.124,
                       62.234, 10000.0, 5000.0,  300.0,  700.0 };

@@ -31,7 +31,8 @@ typedef struct {
     int64_t t_guest_nice;
 } proc_stat_t;
 
-void minmax(int64_t* a, int64_t* b, int64_t** out_min, int64_t** out_max) {
+void minmax(int64_t* a, int64_t* b, int64_t** out_min, int64_t** out_max)
+{
     if(*a >= *b) {
         *out_max = a;
         *out_min = b;
@@ -41,13 +42,15 @@ void minmax(int64_t* a, int64_t* b, int64_t** out_min, int64_t** out_max) {
     }
 }
 
-int64_t delta(int64_t a, int64_t b) {
+int64_t delta(int64_t a, int64_t b)
+{
     int64_t *min, *max;
     minmax(&a, &b, &min, &max);
     return *max - *min;
 }
 
-proc_stat_t sample_cpu(void) {
+proc_stat_t sample_cpu(void)
+{
     FILE*         f = fopen("/proc/stat", "r");
     char          buf[256];
     unsigned long nb = fread(buf, sizeof(char), sizeof(buf), f);
@@ -72,13 +75,15 @@ proc_stat_t sample_cpu(void) {
     return ps;
 }
 
-int64_t sum_proc_stat(proc_stat_t* ps) {
+int64_t sum_proc_stat(proc_stat_t* ps)
+{
     return ps->t_user_time + ps->t_user_nice + ps->t_system + ps->t_idle +
            ps->t_iowait + ps->t_interrupt + ps->t_soft_interrupt +
            ps->t_stolen + ps->t_guest + ps->t_guest_nice;
 }
 
-double cpu_frequency(void) {
+double cpu_frequency(void)
+{
     char   buffer[256];
     double freq;
     memset(buffer, 0, 256);
@@ -89,7 +94,8 @@ double cpu_frequency(void) {
     return freq / 1000000;
 }
 
-double cpu_usage(void) {
+double cpu_usage(void)
+{
     static proc_stat_t before;
     before = sample_cpu();
 
@@ -116,15 +122,16 @@ double cpu_usage(void) {
     return usage;
 }
 
-void output(void) {
+void output(void)
+{
     setlocale(LC_ALL, "");
     GradientStep* color_gradient = Gradient(
       Threshold(10.0, GREEN), Threshold(50.0, ORANGE), Threshold(100.0, RED));
 
     const size_t history_size = 32;
 
-    double history[history_size];
-    Color  color_history[history_size];
+    double history[32];
+    Color  color_history[sizeof(history)/sizeof(history[0])];
 
     for(size_t i = 0; i < history_size; i++) {
         color_history[i] = GREEN;
@@ -136,8 +143,8 @@ void output(void) {
     braille_inline_chart(
       chart, sizeof(chart) / sizeof(chart[0]), history, history_size, 0, 100);
 
-    size_t full_text_size = 256;
-    char   full_text[full_text_size * sizeof(char)];
+    // const size_t full_text_size = 256;
+    // static char full_text[256];
 
     i3bar_block_t block;
     i3bar_block_init(&block);
@@ -148,36 +155,47 @@ void output(void) {
         double frequency = cpu_frequency();
         Color  color     = map_to_color(usage, color_gradient);
 
-        memcpy(history, &history[1], (history_size - 1) * sizeof(double));
+        // memccpy(void *, const void *, int, unsigned long)
+        memmove(history,
+                &history[1],
+                (history_size-1)*sizeof(double));
 
-        memcpy(
-          color_history, &color_history[1], (history_size - 1) * sizeof(Color));
+        // memcpy(history, &history[1], (history_size - 1) * sizeof(double));
 
+        // memcpy(
+        //   color_history, &color_history[1], (history_size - 1) *
+        //   sizeof(Color));
+        //
         history[31]       = usage;
         color_history[31] = color;
 
+        // (sizeof(chart)/4);
         braille_inline_chart(chart,
-                             (sizeof(chart) - 1) / sizeof(chart[0]),
+                             ((sizeof(chart) / sizeof(chart[0]))-1),
                              history,
-                             sizeof(history) / sizeof(history[0]),
+                             (sizeof(history) / sizeof(history[0])),
                              0,
                              100);
+        chart[16] = L'\0';
 
         const char* color_hex = rgbx(color);
 
-        sprintf(full_text,
-                "<span color=\"%s\"> "
-                "%ls %.2lf%% "
-                "%02.2lfGHz   </span>",
+        wchar_t full_text_w[256];
+        memset(full_text_w, 0, sizeof(full_text_w));
+
+        swprintf(full_text_w,
+                sizeof(full_text_w)-1,
+                L"<span color=\"%s\"> "
+                L"%ls %.2lf%% "
+                L"%02.2lfGHz   </span>",
                 color_hex,
                 &chart[0],
                 usage,
                 frequency);
 
-        wchar_t full_text_w[full_text_size];
-        memset(full_text_w, 0, full_text_size * sizeof(wchar_t));
+        full_text_w[255] = L'\0';
 
-        mbstowcs(full_text_w, full_text, sizeof(full_text));
+        // mbstowcs(full_text_w, full_text, sizeof(full_text));
         block.full_text = full_text_w;
         i3bar_block_output(&block);
 
@@ -186,7 +204,8 @@ void output(void) {
     }
 }
 
-int main(void) {
+int main(void)
+{
     setlocale(LC_ALL, "");
     output();
     return EXIT_SUCCESS;
