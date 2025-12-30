@@ -13,6 +13,10 @@
 #define USLEEPFOR 1000000
 #endif
 
+#ifndef CHARTSIZE
+#define CHARTSIZE 17
+#endif
+
 typedef struct {
     int64_t t_user_time;
     int64_t t_user_nice;
@@ -120,14 +124,14 @@ void output(void) {
     const size_t history_size = 32;
 
     double history[history_size];
+    Color  color_history[history_size];
 
-    Color color_history[history_size];
     for(size_t i = 0; i < history_size; i++) {
         color_history[i] = GREEN;
         history[i]       = 0.0;
     }
 
-    wchar_t chart[17] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀\0";
+    wchar_t chart[CHARTSIZE] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀\0";
 
     braille_inline_chart(
       chart, sizeof(chart) / sizeof(chart[0]), history, history_size, 0, 100);
