@@ -132,16 +132,86 @@ clang-format on */
  *
  * */
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <wchar.h>
+
+typedef enum { STYLE_REGULAR, STYLE_OBLIQUE, STYLE_ITALIC } pango_style_t;
+
+#define PANGO_STYLE_NORMAL  "normal"
+#define PANGO_STYLE_OBLIQUE "oblique"
+#define PANGO_STYLE_ITALIC  "italic"
+
+#define PANGO_WEIGHT_ULTRALIGHT "ultralight"
+#define PANGO_WEIGHT_LIGHT      "light"
+#define PANGO_WEIGHT_NORMAL     "normal"
+#define PANGO_WEIGHT_BOLD       "bold"
+#define PANGO_WEIGHT_ULTRABOLD  "ultrabold"
+#define PANGO_WEIGHT_HEAVY      "heavy"
+
+#define PANGO_ULINE_NONE   "none"
+#define PANGO_ULINE_SINGLE "single"
+#define PANGO_ULINE_DOUBLE "double"
+#define PANGO_ULINE_LOW    "low"
+#define PANGO_ULINE_ERROR  "error":
 
 typedef struct {
     char*    buffer;
     wchar_t* wbuffer;
     size_t   size;
-    size_t capacity;
+    size_t   capacity;
 } pango_t;
+
+typedef struct {
+    // CSS color (`#rrggbb`, `rgb()`, named colors)
+    char* foregruond;
+
+    // CSS color (`#rrggbb`, `rgb()`, named colors)
+    char* background;
+
+    /* Pango font description string (`family`, `style`, `weight`, `size`)
+     *
+     * Example: DejaVu Sans Mono 10 */
+    char* font_desc;
+
+    /* Integer in Pango units (`1pt` = `1024` units).
+     * Use `size="large"/size="x-large"` shortcuts.
+     *
+     * Or calculate: `size="20480"` ≈ `20pt` */
+    int size;
+
+    /* Values: `light`, `normal`, `bold`, `ultrabold`, `heavy`
+     *
+     * Also See: `PANGO_WEIGHT_` macro for completion. */
+    char* weight;
+
+    /* Values: `normal`, `oblique`, `italic`
+     *
+     * Also See: `PANGO_STYLE_` macro for completion. */
+    char* style;
+
+    /* Values: `none`, `single`, `double`, `low`, `error`
+     *
+     * Also See: `PANGO_ULINE` macro for completion. */
+    char* underline;
+
+    // `true` / `false`
+    bool strikethrough;
+
+    // Integer in Pango units (positive = `raise`, negative = `lower`)
+    int rise;
+
+    // Integer in Pango units (positive = extra space)
+    int letter_spacing;
+
+    // Floating-point multiplier (e.g., `0.8` = `80%` size)
+    float scale;
+} pango_span_t;
+
+void X(void) {
+    pango_span_t x = (pango_span_t) { .weight = PANGO_WEIGHT_BOLD };
+}
 
 typedef enum {
     PANGO_ITALICS   = 0x0000000001,
@@ -157,16 +227,18 @@ typedef enum {
 
 pango_t pango_new() {
     pango_t p;
-    p.buffer = (char*)malloc(4096);
-    p.size = 0;
+    p.buffer   = (char*)malloc(4096);
+    p.size     = 0;
     p.capacity = 4096;
-
-
 }
-
 
 // <sub>   - Subscript (lowered baseline, smaller size)
 // <sup>   - Superscript (raised baseline, smaller size)
 void pango_feed(pango_t* p, char* text, pango_tag_t tags) {
+}
 
+void hypoothetical() {
+
+    wchar_t* brwc    = NULL;
+    size_t   sz_brwc = 0;
 }
