@@ -18,9 +18,9 @@
 
 
 [TESTBLOCK]
-command=blocks/testblock
+command=blocks/pango
 format=json
-interval=persist
+interval=1
 
 [CPU]
 command=$PWD/blocks/cpu
