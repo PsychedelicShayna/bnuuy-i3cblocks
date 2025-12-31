@@ -132,12 +132,26 @@ clang-format on */
  *
  * */
 
+#define PANGO_SZMAX 1300
+
+#include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <wchar.h>
 
-typedef enum { STYLE_REGULAR, STYLE_OBLIQUE, STYLE_ITALIC } pango_style_t;
+#include "arena.h"
+
+typedef enum {
+    STYLE_REGULAR,
+    STYLE_OBLIQUE,
+    STYLE_ITALIC
+} pango_style,
+  panstyle_t;
 
 #define PANGO_STYLE_NORMAL  "normal"
 #define PANGO_STYLE_OBLIQUE "oblique"
@@ -156,9 +170,14 @@ typedef enum { STYLE_REGULAR, STYLE_OBLIQUE, STYLE_ITALIC } pango_style_t;
 #define PANGO_ULINE_LOW    "low"
 #define PANGO_ULINE_ERROR  "error":
 
+#define PANGO_DEFAULT_CSTR (NULL)
+#define PANGO_DEFAULT_INT  (0)
+#define PANGO_DEFAULT_FLT  ((float)0xFFFFFFFF)
+#define PANGO_DEFAULT_BOOL (-1)
+
 typedef struct {
     // CSS color (`#rrggbb`, `rgb()`, named colors)
-    char* foregruond;
+    char* foreground;
 
     // CSS color (`#rrggbb`, `rgb()`, named colors)
     char* background;
@@ -189,8 +208,8 @@ typedef struct {
      * Also See: `PANGO_ULINE` macro for completion. */
     char* underline;
 
-    // `true` / `false`
-    bool strikethrough;
+    // `1`=`true` / `0`=`false`
+    int strikethrough;
 
     // Integer in Pango units (positive = `raise`, negative = `lower`)
     int rise;
@@ -200,11 +219,28 @@ typedef struct {
 
     // Floating-point multiplier (e.g., `0.8` = `80%` size)
     float scale;
-} pango_span_t;
+} pango_span, panspan_t;
 
-void X(void)
+void panspan_init(pango_span* pspan)
 {
-    pango_span_t x = (pango_span_t) { .weight = PANGO_WEIGHT_BOLD };
+    pspan->foreground     = PANGO_DEFAULT_CSTR;
+    pspan->background     = PANGO_DEFAULT_CSTR;
+    pspan->font_desc      = PANGO_DEFAULT_CSTR;
+    pspan->size           = PANGO_DEFAULT_INT;
+    pspan->weight         = PANGO_DEFAULT_CSTR;
+    pspan->style          = PANGO_DEFAULT_CSTR;
+    pspan->underline      = PANGO_DEFAULT_CSTR;
+    pspan->strikethrough  = PANGO_DEFAULT_INT;
+    pspan->rise           = PANGO_DEFAULT_INT;
+    pspan->letter_spacing = PANGO_DEFAULT_INT;
+    pspan->scale          = PANGO_DEFAULT_FLT;
+}
+
+pango_span panspan_create(void)
+{
+    pango_span pspan;
+    panspan_init(&pspan);
+    return pspan;
 }
 
 typedef enum {
@@ -218,21 +254,52 @@ typedef enum {
     PSBT_SUP  = 0x0040,
     PSBT_SMAL = 0x0080,
     PSBT_BIG  = 0x0100
-} pango_tag_t;
+} pango_tag,
+  pantag_t;
 
 typedef struct {
-    wchar_t* wbuf;
-    size_t   size;
-    size_t   cap;
-} pangosb_t;
+    mem_arena* arena;
+    wchar_t**  strings;
+    size_t     count;
+    size_t     capacity;
 
-pangosb_t new_pango_builder()
+    wchar_t*  buffer;
+    wchar_t** tag_map;
+} pango_string_builder, pangosb;
+
+pango_string_builder pangosb_create(size_t string_capacity)
 {
-    pangosb_t p;
+    pango_string_builder psb;
 
-    // p.wbuf   = (char*)malloc(4096);
-    // p.size     = 0;
-    // p.capacity = 4096;
+    psb.capacity = string_capacity;
+    psb.count    = 0;
+
+    psb.arena   = arena_create(KiB(65536));
+    psb.tag_map = PUSH_ARRAY(psb.arena, wchar_t*, 0x1000);
+    memset(psb.tag_map, 0, (0x0100 * sizeof(wchar_t*)));
+
+    psb.tag_map[0x0001] = L"i";     // PSBT_ITAL
+    psb.tag_map[0x0002] = L"b";     // PSBT_BOLD
+    psb.tag_map[0x0004] = L"u";     // PSBT_ULIN
+    psb.tag_map[0x0008] = L"s";     // PSBT_STRK
+    psb.tag_map[0x0010] = L"tt";    // PSBT_MONO
+    psb.tag_map[0x0020] = L"sub";   // PSBT_SUB
+    psb.tag_map[0x0040] = L"sup";   // PSBT_SUP
+    psb.tag_map[0x0080] = L"small"; // PSBT_SMAL
+    psb.tag_map[0x0100] = L"big";   // PSBT_BIG
+
+    psb.strings = PUSH_ARRAY(psb.arena, wchar_t*, psb.capacity);
+    memset(psb.strings, 0, sizeof(wchar_t*) * psb.capacity);
+
+    return psb;
+}
+
+void pangosb_fini(pango_string_builder* psb)
+{
+    arena_destroy(psb->arena);
+    psb->buffer  = NULL;
+    psb->tag_map = NULL;
+    psb->arena   = NULL;
 }
 
 /* Pushes a wide string (`wchar_t* wstr`) of size `wstr_sz` to the pango
@@ -250,25 +317,98 @@ pangosb_t new_pango_builder()
  * This function returns the same `pangosb_t*` that was passed in as `psb`
  * so that calls can be chained.
  * */
-pangosb_t* pangosb_push_wstr(pangosb_t*    psb,
-                             wchar_t*      wstr,
-                             size_t        wstr_sz,
-                             pango_tag_t   tags,
-                             pango_span_t* span)
-
+pango_string_builder* pangosb_wpush(pango_string_builder* psb,
+                                    wchar_t*              wstr,
+                                    pango_tag             ptag,
+                                    pango_span*           pspan)
 {
+    size_t wstr_length = wcslen(wstr);
+    size_t wstr_size   = wstr_length * sizeof(wchar_t);
+
+    // Set up buffers (this costs no mallocs since we're using the arena)
+    size_t szbuf = PANGO_SZMAX + wstr_size + 256;
+
+    static wchar_t *buf = NULL, *alt = NULL;
+
+    if(buf == NULL || alt == NULL) {
+        buf = PUSH_ARRAY(psb->arena, wchar_t, szbuf);
+        alt = PUSH_ARRAY(psb->arena, wchar_t, szbuf);
+    } else if(buf && alt) {
+        memset(buf, 0, szbuf);
+        memset(alt, 0, szbuf);
+    }
+
+    wcslcpy(buf, wstr, szbuf);
+
+    for(pango_tag bit = 0x0001; bit <= 0x0100; bit <<= 1) {
+        if(ptag & bit) {
+            wchar_t* tag = psb->tag_map[bit];
+            int      x = swprintf(alt, szbuf, L"<%ls>%ls</%ls>", tag, buf, tag);
+            SWAP_PTRS(buf, alt);
+        }
+    }
+
+    if(pspan == NULL) {
+        size_t   szclone = (wcslen(buf) + 1) * sizeof(wchar_t);
+        wchar_t* clone   = arena_push(psb->arena, szclone, false);
+        memcpy(clone, buf, szclone);
+        psb->strings[psb->count] = clone;
+        psb->count++;
+        return psb;
+    }
+
+    wchar_t* span_buf = PUSH_ARRAY(psb->arena, wchar_t, PANGO_SZMAX);
+    wchar_t  field_buf[256];
+    memset(field_buf, 0, sizeof(field_buf));
+
+    // wcsncat(wchar_t *restrict dest, const wchar_t *restrict src, size_t n)
+    // wcscat(wchar_t *restrict dest, const wchar_t *restrict src)
+
+    // Safest:
+    // wcslcat(wchar_t *restrict dest, const wchar_t *restrict src, size_t n)
+
+#define CAT_SPAN_STRING(field)                                          \
+    if(pspan->field != PANGO_DEFAULT_CSTR) {                            \
+        swprintf(field_buf, 256, L"" #field "=\"%s\" ", pspan->field); \
+        wcslcat(span_buf, field_buf, PANGO_SZMAX);                      \
+    }
+
+#define CAT_SPAN_INT(field)                                         \
+    if(pspan->field != PANGO_DEFAULT_INT) {                         \
+        swprintf(field_buf, 256, L"" #field "=%d ", pspan->field); \
+        wcslcat(span_buf, field_buf, PANGO_SZMAX);                  \
+    }
+
+#define CAT_SPAN_FLOAT(field)                                           \
+    {                                                                   \
+        float _flt_default = PANGO_DEFAULT_FLT;                         \
+                                                                        \
+        if(memcmp(&pspan->field, &_flt_default, sizeof(float))) {       \
+            swprintf(field_buf, 256, L"" #field "=%f ", pspan->field); \
+            wcslcat(span_buf, field_buf, PANGO_SZMAX);                  \
+        }                                                               \
+    }
+
+    CAT_SPAN_STRING(foreground)
+    CAT_SPAN_STRING(background)
+    CAT_SPAN_STRING(font_desc)
+    CAT_SPAN_STRING(weight)
+    CAT_SPAN_INT(size)
+    CAT_SPAN_STRING(style)
+    CAT_SPAN_STRING(underline)
+    CAT_SPAN_INT(strikethrough)
+    CAT_SPAN_INT(rise)
+    CAT_SPAN_INT(letter_spacing)
+    CAT_SPAN_FLOAT(scale)
 
 
+    swprintf(alt, szbuf, L"<span %ls>%ls</span>", span_buf, buf);
+
+    size_t   szclone = (wcslen(alt) + 1) * sizeof(wchar_t);
+    wchar_t* clone   = arena_push(psb->arena, szclone, false);
+    memcpy(clone, alt, szclone);
+    psb->strings[psb->count] = clone;
+    psb->count++;
 
     return psb;
-}
-
-void hypoothetical(void)
-{
-
-    pangosb_push_wstr(
-      0, 0, 0, PSBT_NULL, &(pango_span_t) { .foregruond = "red" });
-
-    wchar_t* brwc    = NULL;
-    size_t   sz_brwc = 0;
 }
