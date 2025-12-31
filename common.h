@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <wchar.h>
 
 void urandom(uint8_t* out, size_t szout)
 {
@@ -30,5 +31,12 @@ void hexdump(void* data, size_t size)
     printf("\n");
 }
 
+void whexdump(void* data, size_t size)
+{
+    for(size_t i = 0; i < size; ++i) {
+        wprintf(L"%02lx", (uint64_t)(*((uint8_t*)data + i)));
+    }
+    wprintf(L"\n");
+}
 
 #endif
