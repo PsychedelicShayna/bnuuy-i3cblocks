@@ -17,7 +17,6 @@
 #define USLEEPFOR 1000000
 #endif
 
-
 typedef struct {
     int64_t t_user_time;
     int64_t t_user_nice;
@@ -138,7 +137,7 @@ void output(void)
         history[i]  = 0.0;
     }
 
-    wchar_t chart[CHARTSIZE] = L"⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀";
+    wchar_t chart[CHARTSIZE];
     memset(chart, L'⣀', sizeof(chart));
 
     write_braille_chart(chart,
@@ -160,9 +159,8 @@ void output(void)
         memmove(history, &history[1], sizeof(history) - sizeof(double));
         memmove(chistory, &chistory[1], sizeof(chistory) - sizeof(Color));
 
-        history[sizeof(history)/sizeof(history[0])-1]  = usage;
-        chistory[sizeof(chistory)/sizeof(chistory[0])-1] = color;
-
+        history[sizeof(history) / sizeof(history[0]) - 1]    = usage;
+        chistory[sizeof(chistory) / sizeof(chistory[0]) - 1] = color;
 
         write_braille_chart(&chart[0],
                             (sizeof(chart) / sizeof(chart[0])),
