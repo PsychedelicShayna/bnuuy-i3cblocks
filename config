@@ -61,18 +61,18 @@ color=#d79921
 command=$PWD/disk.pl /mnt/alias/m2
 interval=30
 color=#d79921
+#
+# [Disk I/O]
+# command=printf " %s \n" "$($PWD/diskio.sh)"
+# interval=1
+# label=  
+# color=#d79921
 
-[Disk I/O]
-command=printf " %s \n" "$($PWD/diskio.sh)"
-interval=1
-label=  
-color=#d79921
-
-[Network]
-command=printf "%s \n" "$($PWD/net.sh)"
-interval=1
-label=   
-color=#458588
+# [Network]
+# command=printf "%s \n" "$($PWD/net.sh)"
+# interval=1
+# label=   
+# color=#458588
 
 [IP]
 command=printf "%s \n" "$($PWD/ip.sh)"

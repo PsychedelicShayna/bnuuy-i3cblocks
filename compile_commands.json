@@ -5,8 +5,18 @@
         "file": "/home/shayna/.config/i3blocks/cpu.c"
     },
     {
-        "command": "cc -c -O3 -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -fsanitize=address -fsanitize=undefined -I/opt/cuda/targets/x86_64-linux/include -o blocks/gpu gpu.c color/color.h ",
+        "command": "cc -c -O3 -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -fsanitize=address -fsanitize=undefined -I/opt/cuda/targets/x86_64-linux/include -o blocks/gpu gpu.c",
         "directory": "/home/shayna/.config/i3blocks",
         "file": "/home/shayna/.config/i3blocks/gpu.c"
+    },
+    {
+        "command": "cc -c -O3 -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -fsanitize=address -fsanitize=undefined -o blocks/memory memory.c",
+        "directory": "/home/shayna/.config/i3blocks",
+        "file": "/home/shayna/.config/i3blocks/memory.c"
+    },
+    {
+        "command": "cc -c -O3 -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -fsanitize=address -fsanitize=undefined -o blocks/datetime datetime.c",
+        "directory": "/home/shayna/.config/i3blocks",
+        "file": "/home/shayna/.config/i3blocks/datetime.c"
     }
 ]
