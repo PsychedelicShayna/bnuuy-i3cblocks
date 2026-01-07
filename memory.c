@@ -17,7 +17,8 @@ typedef struct {
     double memavail;
 } memory_sample_t;
 
-memory_sample_t sample_memory(void) {
+memory_sample_t sample_memory(void)
+{
     memory_sample_t ret;
 
     FILE* f = fopen("/proc/meminfo", "r");
@@ -34,7 +35,8 @@ memory_sample_t sample_memory(void) {
     return ret;
 }
 
-void output(void) {
+void output(void)
+{
     GradientStep* gradient = Gradient(
       Threshold(32.0, GREEN), Threshold(64.0, ORANGE), Threshold(100.0, RED));
 
@@ -47,7 +49,7 @@ void output(void) {
         char full_text[64], out[256];
         sprintf(full_text, "%.0lf%% %.03lfG  ", perc, used);
 
-        const char* color_hex = map_to_color(used, gradient);
+        const char* color_hex = map_to_color_hex(used, gradient);
         sprintf(out, JSON_OUTPUT_TEMPLATE, full_text, color_hex);
 
         fprintf(stdout, "%s", out);
@@ -56,7 +58,8 @@ void output(void) {
     }
 }
 
-int main(void) {
+int main(void)
+{
     output();
     return EXIT_SUCCESS;
 }

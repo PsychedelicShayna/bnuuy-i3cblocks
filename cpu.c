@@ -21,7 +21,6 @@
 #ifndef USLEEPFOR
 #define USLEEPFOR 1000000
 #endif
-#define USLEEPFOR 250000
 
 typedef struct {
     int64_t t_user_time;
@@ -100,7 +99,7 @@ double cpu_frequency(void)
     return freq / 1000000;
 }
 
-double cpu_usage(void)
+double cpu_usage(__useconds_t micro)
 {
     static proc_stat_t before;
     before = sample_cpu();
@@ -109,7 +108,7 @@ double cpu_usage(void)
     int64_t before_idle   = before.t_idle;
     int64_t before_active = before_total - before_idle;
 
-    usleep(USLEEPFOR);
+    usleep(micro != 0 ? micro : USLEEPFOR);
 
     proc_stat_t now = sample_cpu();
 
@@ -139,12 +138,14 @@ void output(void)
     // two datapoints in history for every one braille chracter in the chart.
     size_t HISTORYSIZE = CHARTSIZE * 2;
 
-    double history[HISTORYSIZE];
-    Color  chistory[HISTORYSIZE];
+    double     history2[HISTORYSIZE];
+    cpu_sample history[HISTORYSIZE];
+    Color      chistory[HISTORYSIZE];
 
     for(size_t i = 0; i < sizeof(history) / sizeof(history[0]); i++) {
         chistory[i] = GREEN;
-        history[i]  = 0.0;
+        // history[i]  = 0.0;
+        cpu_sample_init(&history[i]);
     }
 
     i3bar_block_t block;
@@ -161,7 +162,7 @@ void output(void)
 #endif
 
     wchar_t chart[CHARTSIZE];
-    memset(chart, L'⣀', sizeof(chart));
+    memset(chart, L'⣀', sizeof(chart) / sizeof(chart[0]));
 
     size_t   largebuf_size  = 16383;
     wchar_t* largebuf_pango = malloc(largebuf_size);
@@ -175,47 +176,76 @@ void output(void)
 
     int pair_offset = 0;
 
+    cpu_sample resample[CHARTSIZE];
+    memset(resample, 0, (sizeof(resample) / sizeof(resample[0])));
+
     while(1) {
-        double usage     = cpu_usage();
+        double usage     = cpu_usage(USLEEPFOR);
         double frequency = cpu_frequency();
         Color  color     = map_to_color(usage, color_gradient);
 
-        memmove(history, &history[1], sizeof(history) - sizeof(double));
+        memmove(history, &history[1], sizeof(history) - sizeof(cpu_sample));
         memmove(chistory, &chistory[1], sizeof(chistory) - sizeof(Color));
-        history[sizeof(history) / sizeof(history[0]) - 1]    = usage;
-        chistory[sizeof(chistory) / sizeof(chistory[0]) - 1] = color;
+        memmove(resample, &resample[1], sizeof(resample) - sizeof(cpu_sample));
+        history[sizeof(history) / sizeof(history[0]) - 1].scalar = usage;
+        chistory[sizeof(chistory) / sizeof(chistory[0]) - 1]     = color;
 
-        pair_offset ^= 1;
-        write_braille_chart(&chart[0],
-                            (sizeof(chart) / sizeof(chart[0])),
-                            &history[pair_offset],
-                            (sizeof(history) / sizeof(history[0]))-pair_offset,
-                            -1,
-                            -1);
+        write_braille_chart_samples(&resample[0],
+                                    CHARTSIZE,
+                                    history,
+                                    (sizeof(history) / sizeof(history[0])),
+                                    -1,
+                                    -1);
 
+        // wprintf(L"Lastonne: %d\n", resample[CHARTSIZE-1].scalar);
+        // wprintf(L"SemiLastonne: %d\n", resample[CHARTSIZE-2].scalar);
         // 6 good, 6 offby1, 7, good 7 offby1, it's the uneven index, i*2
         // is not a good strategy.
 
         for(size_t i = 0; i < CHARTSIZE; i++) {
-            // size_t  chart_idx        = i / 2;
+            cpu_sample s1      = resample[i];
+            cpu_sample s2      = resample[i +  1 < CHARTSIZE ? i + 1 : i];
+            double     scalar1 = s1.scalar;
+            double     scalar2 = s2.scalar;
 
-            size_t s0 = pair_offset + 2 * i;
-            size_t s1 = s0 + 1;
+            // size_t resample_idx = i / 2;
+            // wprintf(L"Loop idx: %zu\n", i);
+            // wprintf(L"Chart idx: %zu\n", resample_idx);
 
-            if(s0 >= HISTORYSIZE)
-                break;
-            double v0 = history[s0];
-            double v1 = (s1 < HISTORYSIZE) ? history[s1] : v0;
+            // size_t s0 = pair_offset + 2 * i;
+            // size_t s1 = s0 + 1;
 
-            Color c0 = chistory[s0];
-            Color c1 = (s1 < HISTORYSIZE) ? chistory[s1] : c0;
+            // if(s0 >= HISTORYSIZE)
+            //     break;
+            //
+            // cpu_sample s0 =
+            //   resample[i >= (sizeof(resample) / sizeof(resample[0])) ? i - 1
+            //                                                          : i];
+            //
+            // // wprintf(L"S0: %lf\n", s0.scalar);
+            // // cpu_sample s1 = resample[(2 * i) + 1];
+            //
+            // cpu_sample s1 =
+            //   resample[i + 1 >= (sizeof(resample) / sizeof(resample[0]))
+            //              ? i
+            //              : i + 1];
+            // // wprintf(L"S1: %lf\n", s1.scalar);
 
-            Color chosen =
-              (v0 >= v1) ? c0 : c1; // history[s0] >= history[s1] ? c1 : c2;
-                                    //
-            if(i >= CHARTSIZE - 1) {
-                chosen = color;
-            }
+            //
+            // double v0 = history[s0];
+            // double v1 = (s1 < HISTORYSIZE) ? history[s1] : v0;
+
+            // Color c0 = chistory[s0];
+            // Color c1 = (s1 < HISTORYSIZE) ? chistory[s1] : c0;
+
+            // Color chosen = map_to_color(
+            //   (s0.scalar >= s1.scalar) ? s0.scalar : s1.scalar,
+            //   color_gradient); // history[s0] >= history[s1] ? c1 : c2;
+            // // wprintf(L"Color: %d %d %d\n", color.r, color.g, color.b);
+
+            // if(i >= CHARTSIZE - 1) {
+            //     chosen = color;
+            // }
 
             // if(i >= CHARTSIZE - 1) {
             //     chosen = color;
@@ -228,17 +258,23 @@ void output(void)
             //     min = &color_b;
             // }
 
-            wchar_t braille_chars[2] = { chart[i], L'\0' };
-
-            braille_span.foreground = rgbx(chosen);
+            // wchar_t braille_chars[2] = { sample.wchr ? sample.wchr :
+            // sample.wchr, L'\0' };
+            wchar_t braille_chars[2] = { s1.wchr, L'\0' };
+            //
+            // wprintf(L"braillechars: '%ls'\n", braille_chars);
+            braille_span.foreground =
+              rgbx(map_to_color(scalar1, color_gradient));
 
             memset(pre_outbuf, 0, sizeof(pre_outbuf));
+
             pango_format(pre_outbuf,
-                         sizeof(pre_outbuf) / sizeof(pre_outbuf[0]),
+                         (sizeof(pre_outbuf) / sizeof(pre_outbuf[0])),
                          braille_chars,
                          PSBT_NULL,
                          &braille_span);
 
+            // wprintf(L"preoutbuf: %ls\n", pre_outbuf);
             wcslcat(largebuf_pango,
                     pre_outbuf,
                     largebuf_size / sizeof(largebuf_pango[0]));
@@ -268,8 +304,9 @@ void output(void)
 
         pango_format(outbuf, 1024, pre_outbuf, PSBT_NULL, &ps);
 
-        wcslcat(
-          largebuf_pango, outbuf, largebuf_size / sizeof(largebuf_pango[0]));
+        // wprintf(L"outbuf: %ls\n", outbuf);
+        wcscat(largebuf_pango, outbuf);
+        wcslcat(largebuf_pango, outbuf, wcslen(largebuf_pango));
 
 #ifdef TODO_REPLACE_THIS
         // Write the full_text string to the pango string builder, to make
