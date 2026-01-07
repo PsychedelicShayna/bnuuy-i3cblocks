@@ -52,11 +52,6 @@ INVARIANTS:
   */
 
 // Return multiple of `pow2` that is greater or equal to `n`
-static inline uintptr_t align_mugepow2(uintptr_t n, size_t pow2)
-{
-    assert(ispow2(pow2));
-    return (n + (pow2 - 1)) & ~(uintptr_t)(pow2 - 1);
-}
 
 void urandom(uint8_t* out, size_t szout)
 {
@@ -74,14 +69,14 @@ void urandom(uint8_t* out, size_t szout)
         *t;                                             \
     })
 
-#define urandint(T, from, to)                           \
-    ({                                                  \
-        uint8_t buf[sizeof(T) + alignof(T)];            \
-        urandom(buf, sizeof(buf));                      \
-        T* t = (T*)alignup((uintptr_t)buf, alignof(T)); \
-        *t %= (to - from);                              \
-        *t += from;                                     \
-        *t;                                             \
+#define urandint(T, from, to)      \
+    ({                             \
+        uint8_t buf[sizeof(T)];    \
+        urandom(buf, sizeof(buf)); \
+        T* t = (T*)buf;            \
+        *t %= (to - from);         \
+        *t += from;                \
+        *t;                        \
     })
 
 // #define urandint(T, from, to)

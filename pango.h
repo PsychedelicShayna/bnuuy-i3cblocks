@@ -1,3 +1,19 @@
+#ifndef _PANGO_H
+#define _PANGO_H
+
+#define PANGO_SZMAX 1300
+
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <wchar.h>
+
+#include "arena.h"
 
 /* clang-format off
 
@@ -132,19 +148,12 @@ clang-format on */
  *
  * */
 
-#define PANGO_SZMAX 1300
-
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <wchar.h>
-
-#include "arena.h"
+#define SWAP_PTRS(a, b)       \
+    {                         \
+        wchar_t* temp = a;    \
+        a             = b;    \
+        b             = temp; \
+    }
 
 typedef enum {
     STYLE_REGULAR,
@@ -258,45 +267,126 @@ typedef enum {
   pantag_t;
 
 typedef struct {
-    mem_arena* arena;
-    wchar_t**  strings;
-    size_t     count;
-    size_t     capacity;
+    marena*   arena;
+    wchar_t** strings;
+    size_t    count;
+    size_t    capacity;
 
     wchar_t*  buffer;
     wchar_t** tag_map;
 } pango_string_builder, pangosb;
 
-pango_string_builder pangosb_create(size_t string_capacity)
+wchar_t* TAG_MAP[256] = {
+    L"", L"i", L"b", L"",    L"u",   L"", L"", L"", L"s",     L"", L"", L"",
+    L"", L"",  L"",  L"",    L"tt",  L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"sub",   L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"sup", L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"small", L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"",    L"",    L"", L"", L"", L"",      L"", L"", L"",
+    L"", L"",  L"",  L"big",
+};
+// psb->tag_map[0x0001] = L"i";     // psb->_ITAL
+// psb->tag_map[0x0002] = L"b";     // psb->_BOLD
+// psb->tag_map[0x0004] = L"u";     // psb->_ULIN
+// psb->tag_map[0x0008] = L"s";     // psb->_STRK
+// psb->tag_map[0x0010] = L"tt";    // psb->_MONO
+// psb->tag_map[0x0020] = L"sub";   // psb->_SUB
+// psb->tag_map[0x0040] = L"sup";   // psb->_SUP
+// psb->tag_map[0x0080] = L"small"; // psb->_SMAL
+// psb->tag_map[0x0100] = L"big";   // psb->_BIG
+
+/* Returns the size in `wchar_t` of the last string pushed to the
+ * pango string builder `psb`. If no strings have been pushed yet,
+ * returns `0`. */
+size_t pangosb_size_last(pango_string_builder* psb)
 {
-    pango_string_builder psb;
+    if(psb->count == 0) {
+        return 0;
+    }
 
-    psb.capacity = string_capacity;
-    psb.count    = 0;
+    if(psb->strings[psb->count - 1] == NULL) {
+        return 0;
+    }
 
-    psb.arena   = arena_create(KiB(65536));
-    psb.tag_map = PUSH_ARRAY(psb.arena, wchar_t*, 0x1000);
-    memset(psb.tag_map, 0, (0x0100 * sizeof(wchar_t*)));
+    return wcslen(psb->strings[psb->count - 1]);
+}
 
-    psb.tag_map[0x0001] = L"i";     // PSBT_ITAL
-    psb.tag_map[0x0002] = L"b";     // PSBT_BOLD
-    psb.tag_map[0x0004] = L"u";     // PSBT_ULIN
-    psb.tag_map[0x0008] = L"s";     // PSBT_STRK
-    psb.tag_map[0x0010] = L"tt";    // PSBT_MONO
-    psb.tag_map[0x0020] = L"sub";   // PSBT_SUB
-    psb.tag_map[0x0040] = L"sup";   // PSBT_SUP
-    psb.tag_map[0x0080] = L"small"; // PSBT_SMAL
-    psb.tag_map[0x0100] = L"big";   // PSBT_BIG
+size_t pangosb_get_last(pango_string_builder* psb, wchar_t* out, size_t szout)
+{
 
-    psb.strings = PUSH_ARRAY(psb.arena, wchar_t*, psb.capacity);
-    memset(psb.strings, 0, sizeof(wchar_t*) * psb.capacity);
+    if(psb->count == 0) {
+        return 0;
+    }
+
+    if(psb->strings[psb->count - 1] == NULL) {
+        return 0;
+    }
+
+    size_t szwc = pangosb_size_last(psb) + 1;
+    if(szout < szwc * sizeof(wchar_t)) {
+        size_t needed = szwc * sizeof(wchar_t);
+        return needed;
+    }
+
+    memcpy(out, psb->strings[psb->count - 1], szwc * sizeof(wchar_t));
+
+    return szwc * sizeof(wchar_t);
+}
+//
+// size_t   szclone = (wcslen(psb->strings[0]) + 1) * sizeof(wchar_t);
+// wchar_t* clone   = malloc(szclone);
+// memcpy(clone, psb->strings[0], szclone);
+
+pango_string_builder*
+  pangosb_init(pango_string_builder* psb, marena* arena, size_t string_capacity)
+{
+    psb->capacity = string_capacity;
+    psb->count    = 0;
+
+    psb->arena   = arena; // marena_create(KiB(65536));
+    psb->tag_map = marena_alloc(psb->arena, 0x1000, ARENA_ALIGN, false);
+
+    memset(psb->tag_map, 0, (0x0100 * sizeof(wchar_t*)));
+
+    // psb->tag_map = marena_alloc_array(psb->arena, wchar_t*, 0x1000);
+
+    psb->tag_map[0x0001] = L"i";     // psb->_ITAL
+    psb->tag_map[0x0002] = L"b";     // psb->_BOLD
+    psb->tag_map[0x0004] = L"u";     // psb->_ULIN
+    psb->tag_map[0x0008] = L"s";     // psb->_STRK
+    psb->tag_map[0x0010] = L"tt";    // psb->_MONO
+    psb->tag_map[0x0020] = L"sub";   // psb->_SUB
+    psb->tag_map[0x0040] = L"sup";   // psb->_SUP
+    psb->tag_map[0x0080] = L"small"; // psb->_SMAL
+    psb->tag_map[0x0100] = L"big";   // psb->_BIG
+
+    // psb->strings = PUSH_ARRAY(psb->arena, wchar_t*, psb->capacity);
+    psb->strings = marena_alloc(
+      psb->arena, sizeof(wchar_t*) * psb->capacity, ARENA_ALIGN, false);
+
+    memset(psb->strings, 0, sizeof(wchar_t*) * psb->capacity);
 
     return psb;
 }
 
 void pangosb_fini(pango_string_builder* psb)
 {
-    arena_destroy(psb->arena);
+    // marena_free(psb->arena);
     psb->buffer  = NULL;
     psb->tag_map = NULL;
     psb->arena   = NULL;
@@ -318,6 +408,8 @@ void pangosb_fini(pango_string_builder* psb)
  * so that calls can be chained.
  * */
 pango_string_builder* pangosb_wpush(pango_string_builder* psb,
+                                    wchar_t*              wbuffer,
+                                    size_t                szwbuffer,
                                     wchar_t*              wstr,
                                     pango_tag             ptag,
                                     pango_span*           pspan)
@@ -333,8 +425,7 @@ pango_string_builder* pangosb_wpush(pango_string_builder* psb,
     if(buf == NULL || alt == NULL) {
         buf = PUSH_ARRAY(psb->arena, wchar_t, szbuf);
         alt = PUSH_ARRAY(psb->arena, wchar_t, szbuf);
-    } else if(buf && alt) {
-        memset(buf, 0, szbuf);
+
         memset(alt, 0, szbuf);
     }
 
@@ -343,22 +434,30 @@ pango_string_builder* pangosb_wpush(pango_string_builder* psb,
     for(pango_tag bit = 0x0001; bit <= 0x0100; bit <<= 1) {
         if(ptag & bit) {
             wchar_t* tag = psb->tag_map[bit];
-            int      x = swprintf(alt, szbuf, L"<%ls>%ls</%ls>", tag, buf, tag);
+            swprintf(alt, szbuf, L"<%ls>%ls</%ls>", tag, buf, tag);
             SWAP_PTRS(buf, alt);
         }
     }
 
     if(pspan == NULL) {
-        size_t   szclone = (wcslen(buf) + 1) * sizeof(wchar_t);
-        wchar_t* clone   = arena_push(psb->arena, szclone, false);
+        size_t szclone = (wcslen(buf) + 1) * sizeof(wchar_t);
+        // wchar_t* clone   = arena_push(psb->arena, szclone, false);
+        // wchar_t* clone = marena_alloc(psb->arena, szclone, ARENA_ALIGN,
+        // false);
+
+        wchar_t* clone = PUSH_ARRAY(psb->arena, wchar_t, szclone);
         memcpy(clone, buf, szclone);
         psb->strings[psb->count] = clone;
         psb->count++;
         return psb;
     }
 
-    wchar_t* span_buf = PUSH_ARRAY(psb->arena, wchar_t, PANGO_SZMAX);
-    wchar_t  field_buf[256];
+    // wchar_t* span_buf = PUSH_ARRAY(psb->arena, wchar_t, PANGO_SZMAX);
+
+    wchar_t* span_buf =
+      marena_alloc(psb->arena, PANGO_SZMAX, ARENA_ALIGN, false);
+
+    wchar_t field_buf[256];
     memset(field_buf, 0, sizeof(field_buf));
 
     // wcsncat(wchar_t *restrict dest, const wchar_t *restrict src, size_t n)
@@ -367,26 +466,26 @@ pango_string_builder* pangosb_wpush(pango_string_builder* psb,
     // Safest:
     // wcslcat(wchar_t *restrict dest, const wchar_t *restrict src, size_t n)
 
-#define CAT_SPAN_STRING(field)                                          \
-    if(pspan->field != PANGO_DEFAULT_CSTR) {                            \
+#define CAT_SPAN_STRING(field)                                         \
+    if(pspan->field != PANGO_DEFAULT_CSTR) {                           \
         swprintf(field_buf, 256, L"" #field "=\"%s\" ", pspan->field); \
-        wcslcat(span_buf, field_buf, PANGO_SZMAX);                      \
+        wcslcat(span_buf, field_buf, PANGO_SZMAX);                     \
     }
 
-#define CAT_SPAN_INT(field)                                         \
-    if(pspan->field != PANGO_DEFAULT_INT) {                         \
+#define CAT_SPAN_INT(field)                                        \
+    if(pspan->field != PANGO_DEFAULT_INT) {                        \
         swprintf(field_buf, 256, L"" #field "=%d ", pspan->field); \
-        wcslcat(span_buf, field_buf, PANGO_SZMAX);                  \
+        wcslcat(span_buf, field_buf, PANGO_SZMAX);                 \
     }
 
-#define CAT_SPAN_FLOAT(field)                                           \
-    {                                                                   \
-        float _flt_default = PANGO_DEFAULT_FLT;                         \
-                                                                        \
-        if(memcmp(&pspan->field, &_flt_default, sizeof(float))) {       \
+#define CAT_SPAN_FLOAT(field)                                          \
+    {                                                                  \
+        float _flt_default = PANGO_DEFAULT_FLT;                        \
+                                                                       \
+        if(memcmp(&pspan->field, &_flt_default, sizeof(float))) {      \
             swprintf(field_buf, 256, L"" #field "=%f ", pspan->field); \
-            wcslcat(span_buf, field_buf, PANGO_SZMAX);                  \
-        }                                                               \
+            wcslcat(span_buf, field_buf, PANGO_SZMAX);                 \
+        }                                                              \
     }
 
     CAT_SPAN_STRING(foreground)
@@ -401,14 +500,13 @@ pango_string_builder* pangosb_wpush(pango_string_builder* psb,
     CAT_SPAN_INT(letter_spacing)
     CAT_SPAN_FLOAT(scale)
 
-
     swprintf(alt, szbuf, L"<span %ls>%ls</span>", span_buf, buf);
 
     size_t   szclone = (wcslen(alt) + 1) * sizeof(wchar_t);
-    wchar_t* clone   = arena_push(psb->arena, szclone, false);
+    wchar_t* clone   = marena_alloc(psb->arena, szclone, ARENA_ALIGN, false);
     memcpy(clone, alt, szclone);
     psb->strings[psb->count] = clone;
     psb->count++;
-
-    return psb;
 }
+
+#endif

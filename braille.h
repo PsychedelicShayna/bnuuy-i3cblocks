@@ -165,6 +165,35 @@ double lerp(double v0, double v1, double t)
     return (1 - t) * v0 + t * v1;
 }
 
+typedef struct {
+    double  scalar;
+    wchar_t wchr;
+} cpu_sample;
+
+void cpu_sample_init(cpu_sample* sample)
+{
+    sample->scalar = 1.0;
+    sample->wchr   = L'⣀';
+}
+
+void cpu_sample_minmax(cpu_sample* samples,
+                       size_t      nsamples,
+                       double**    min,
+                       double**    max)
+{
+    *min = &samples[0].scalar;
+    *max = &samples[0].scalar;
+
+    for(size_t i = 0; i < nsamples; i++) {
+        cpu_sample s = samples[i];
+        if(s.scalar > **max) {
+            *max = &samples[i].scalar;
+        } else if(s.scalar < **min) {
+            *min = &samples[i].scalar;
+        }
+    }
+}
+
 // clang-format off
 
 /* Writes a braille chart to `wchar_t* outchart` derived from the
@@ -268,6 +297,116 @@ size_t write_braille_chart(wchar_t* out, size_t outlen,
     } while(idx < (outlen - 1));
 
     memcpy(out, &chart, outlen * sizeof(wchar_t));
+    return idx;
+}
+
+size_t write_braille_chart_samples(cpu_sample* out,
+                                   size_t      outlen,
+                                   cpu_sample* data,
+                                   size_t      len,
+                                   double      dmin,
+                                   double      dmax)
+{ /* clang-format on */
+
+    // Temperature; the "heat" of the chart, increased when values enter the
+    // system, and diffuses slowly as they leave the system. Apparently this
+    // idea is already a thing in audio? Peak detection with attack/release?
+    // Discovering that isn't gonna make me conform to some existing algorithm
+    // I'm calling it temperature! It makes sense! Like.. a hot red barrel of
+    // a rotating minigun that slowly takes time to cool back down post fire!
+
+    static double current_temp_max = 0.0;
+    static double current_temp_min = 0.0;
+
+    const double heat_rate = 0.9;  // 1.0 = instant for spikes
+    const double cool_rate = 0.05; // 0.5 = (5%/frame) when quiet
+
+    double *local_min, *local_max;
+
+    // If this is true, we let the caller have a fixed min and max and do not
+    // do any sort of calculation or storage of past values.
+    if(dmax >= 0.0 && dmin >= 0.0) {
+        local_max = &dmax;
+        local_min = &dmin;
+    } else {
+        cpu_sample_minmax(data, len, &local_min, &local_max);
+
+        if(*local_max > current_temp_max) {
+            // HEAT UP: We need to grow to fit this new spike
+            current_temp_max = lerp(current_temp_max, *local_max, heat_rate);
+        } else {
+            // COOL DOWN: The spike is gone, slowly drift back down
+            current_temp_max = lerp(current_temp_max, *local_max, cool_rate);
+        }
+
+        if(*local_min < current_temp_min) {
+            current_temp_min = lerp(current_temp_min, *local_min, heat_rate);
+        } else {
+            current_temp_min = lerp(current_temp_min, *local_min, cool_rate);
+        }
+    }
+
+    local_min = &current_temp_min;
+    local_max = &current_temp_max;
+
+    cpu_sample chart[outlen];
+    memset(chart, 0, sizeof(chart));
+
+    size_t idx = 0;
+    size_t i   = 0;
+
+    do {
+        if(i >= len) {
+            break;
+        }
+
+        cpu_sample* s1 = &data[i];
+        cpu_sample* s2 = &data[i + 1 < len ? i + 1 : i];
+
+        double v1 = s1->scalar;
+        double v2 = s2->scalar;
+
+        double norm1 = (v1 - *local_min) / (*local_max - *local_min);
+        double perc1 = norm1 * 100;
+
+        double norm2 = (v2 - *local_min) / (*local_max - *local_min);
+        double perc2 = norm2 * 100;
+
+        uint8_t vcode   = classify(perc1, perc2);
+        wchar_t braille = BRAILLE_TABLE[vcode];
+
+ // ....[::....
+ // ....::....
+ // ..[.:[:....
+ // ..[::....
+ //
+        // this is the issue for the ping pong, for one char v2 > v1
+        // for two, and the other for 1, + the 1 that's for sure
+        // since braille is composed of two :: and if :: decomposes into
+        //  .: :.  then the : value is split between .: and :.
+        //  so two chars get printed for trying to printn [.:][:.] when
+        //  you really jut wanted to print ..[::].. and before the comp
+        //  was between [::]'s norm1 and norm2, but then it becomes the
+        //  .:  norm1 and norm2, and :. norm 1 and norm 2 that decides what
+        // value goes there, even if it's always the bigger one, it might
+        // not *be* bigger at that index in input scalar array / history
+        //
+        //
+        // or rather, if the scalar is stored in the cpu sample and the
+        // sample is moved, and the chart wchar is recomputed then it might
+        // not make sense for it to have that color if it's represetning the
+        // other or smaller half of the main character, that's why 
+        chart[idx] =
+          (cpu_sample) { .scalar = v2 > v1 ? v2 : v1, .wchr = braille };
+
+        // wprintf(L"Braille: %lc\n", braille);
+
+        idx++;
+
+        i += 2;
+    } while(idx < outlen);
+
+    memcpy(out, &chart, outlen*sizeof(cpu_sample));
     return idx;
 }
 

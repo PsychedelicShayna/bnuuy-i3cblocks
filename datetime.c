@@ -17,7 +17,8 @@ static const char* seasons[12] = {
     "", "", "󰉊", "󰉊", "󰉊", ""
 };
 
-void output(void) {
+void output(void)
+{
     const char* TIME_FORMAT = " %%s  %a %d %b %H:%M:%S %%s  ";
     const char* COLOR       = "#b16286";
     char        bufferA[256], bufferB[64];
@@ -28,15 +29,17 @@ void output(void) {
         t  = time(NULL);
         lt = localtime(&t);
 
-        strftime(bufferA, 128, TIME_FORMAT, lt);
-        sprintf(bufferB, bufferA, seasons[lt->tm_mon], clocks[lt->tm_hour]);
-        sprintf(bufferA, JSON_OUTPUT_TEMPLATE, bufferB, COLOR);
+        strftime(bufferA, 256, TIME_FORMAT, lt);
+        snprintf(
+          bufferB, 64, bufferA, seasons[lt->tm_mon], clocks[lt->tm_hour]);
+        snprintf(bufferA, 256, JSON_OUTPUT_TEMPLATE, bufferB, COLOR);
         fprintf(stdout, "%s", bufferA);
         fflush(stdout);
         usleep(USLEEPFOR);
     }
 }
 
-int main(void) {
+int main(void)
+{
     output();
 }
