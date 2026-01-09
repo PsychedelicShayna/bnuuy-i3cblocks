@@ -1,6 +1,7 @@
 #ifndef _I3BAR_H
 #define _I3BAR_H
 
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -139,7 +140,24 @@ struct i3bar_proto_block {
 
 typedef struct i3bar_proto_block i3bar_block_t;
 
-void i3bar_block_init(i3bar_block_t* block) {
+void concat_toblock(i3bar_block_t* block, ...)
+{
+    va_list  ap;
+    wchar_t* w = L"NULLWCHAR";
+
+    va_start(ap, block);
+
+    while((w = va_arg(ap, wchar_t*)) != NULL) {
+        wcscat(block->full_text, w);
+    }
+
+    va_end(ap);
+}
+
+#define i3bcat(b, ...) concat_toblock(b, __VA_ARGS__, NULL)
+
+void i3bar_block_init(i3bar_block_t* block)
+{
     block->full_text     = NULL;
     block->short_text    = NULL;
     block->color         = NULL;
@@ -186,7 +204,8 @@ markdown with the pango markup language"
 // Serialize any i3bar block to JSON format for i3bar consumption, including
 // only the fields that are set, and escaping strings with quotes or other
 // special characters as needed.
-void i3bar_block_output(i3bar_block_t* block) {
+void i3bar_block_output(i3bar_block_t* block)
+{
     if(block->full_text == NULL || block->full_text[0] == '\0') {
         block->full_text = L"NULL";
     }

@@ -13,6 +13,31 @@
 #include <unistd.h>
 #include <wchar.h>
 
+static const char* TAGMAP_CSTR[257] = {
+    NULL, "i",  "b",  NULL, "u",   NULL, NULL, NULL, "s",     NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, "tt",  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, "sub",   NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, "sup", NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, "small", NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL,  NULL, NULL, NULL, NULL,    NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, "big"
+};
+
 static const wchar_t* TAGMAP[257] = {
     NULL, L"i", L"b", NULL,  L"u", NULL,  NULL, NULL,     L"s", NULL,   NULL,
     NULL, NULL, NULL, NULL,  NULL, L"tt", NULL, NULL,     NULL, NULL,   NULL,
@@ -136,6 +161,102 @@ void panspan_init(panspan* pspan)
     pspan->rise           = PANGO_DEFAULT_INT;
     pspan->letter_spacing = PANGO_DEFAULT_INT;
     pspan->scale          = PANGO_DEFAULT_FLT;
+}
+
+#define panf(span, tags, format, ...)                   \
+    ({                                                  \
+        panspan        s = span;                        \
+        static wchar_t buffer[sizeof(wchar_t) * 128];   \
+        static wchar_t buffer2[sizeof(wchar_t) * 128];  \
+        memset(buffer, 0, sizeof(wchar_t) * 128);       \
+        memset(buffer2, 0, sizeof(wchar_t) * 128);      \
+        swprintf(buffer, 128, L"" format, __VA_ARGS__); \
+        pango_format(buffer2, 128, buffer, tags, &s);   \
+        buffer2;                                        \
+    })
+
+#define mkspan(...)                                                          \
+    (panspan)                                                                \
+    {                                                                        \
+        .foreground = PANGO_DEFAULT_CSTR, .background = PANGO_DEFAULT_CSTR,  \
+        .font_desc = PANGO_DEFAULT_CSTR, .size = PANGO_DEFAULT_INT,          \
+        .weight = PANGO_DEFAULT_CSTR, .style = PANGO_DEFAULT_CSTR,           \
+        .underline = PANGO_DEFAULT_CSTR, .strikethrough = PANGO_DEFAULT_INT, \
+        .rise = PANGO_DEFAULT_INT, .letter_spacing = PANGO_DEFAULT_INT,      \
+        .scale = PANGO_DEFAULT_FLT, __VA_ARGS__                              \
+    }
+
+void pango_format_cstr(
+  char* dest, size_t ndest, char* string, pantag tags, panspan* span)
+{
+    for(pantag bit = 0x0001; bit <= 0x0100; bit <<= 1) {
+        if(tags & bit) {
+            const char* tag = TAGMAP_CSTR[bit];
+
+            strlcat(dest, "<", ndest);
+            strlcat(dest, tag, ndest);
+            strlcat(dest, ">", ndest);
+        }
+    }
+
+    if(span) {
+        strlcat(dest, "<span ", ndest);
+
+        char field_buf[256] = { 0 };
+        memset(field_buf, 0, sizeof(field_buf));
+
+#define CAT_SPAN_STRING(field)                                    \
+    if(span->field != PANGO_DEFAULT_CSTR) {                       \
+        snprintf(field_buf, 256, #field "=\"%s\" ", span->field); \
+        strlcat(dest, field_buf, ndest);                          \
+    }
+
+#define CAT_SPAN_INT(field)                                   \
+    if(span->field != PANGO_DEFAULT_INT) {                    \
+        snprintf(field_buf, 256, #field "=%d ", span->field); \
+        strlcat(dest, field_buf, ndest);                      \
+    }
+
+#define CAT_SPAN_FLOAT(field)                                     \
+    {                                                             \
+        float _flt_default = PANGO_DEFAULT_FLT;                   \
+                                                                  \
+        if(memcmp(&span->field, &_flt_default, sizeof(float))) {  \
+            snprintf(field_buf, 256, #field "=%f ", span->field); \
+            strlcat(dest, field_buf, ndest);                      \
+        }                                                         \
+    }
+
+        CAT_SPAN_STRING(foreground);
+        CAT_SPAN_STRING(background);
+        CAT_SPAN_STRING(font_desc);
+        CAT_SPAN_STRING(weight);
+        CAT_SPAN_INT(size);
+        CAT_SPAN_STRING(style);
+        CAT_SPAN_STRING(underline);
+        CAT_SPAN_INT(strikethrough);
+        CAT_SPAN_INT(rise);
+        CAT_SPAN_INT(letter_spacing);
+        CAT_SPAN_FLOAT(scale);
+
+        strlcat(dest, ">", ndest);
+    }
+
+    strlcat(dest, string, ndest);
+
+    if(span) {
+        strlcat(dest, "</span>", ndest);
+    }
+
+    for(pantag bit = 0x0100; bit >= 0x0001; bit >>= 1) {
+        if(tags & bit) {
+            const char* tag = TAGMAP_CSTR[bit];
+
+            strlcat(dest, "</", ndest);
+            strlcat(dest, tag, ndest);
+            strlcat(dest, ">", ndest);
+        }
+    }
 }
 
 /**
