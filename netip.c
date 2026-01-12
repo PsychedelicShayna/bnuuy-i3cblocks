@@ -253,7 +253,7 @@ void output(void)
 
         swprintf(buffer,
                  4096,
-                 L" %5.3lfM↓ %5.3lfM↑ %s 󰈀 %s  ",
+                 L" %5.3lfM↓ %5.3lfM↑ %s 󰈀 %s   ",
                  ((double)ifstats.rx_rate / 1024.0 / 1024.0),
                  ((double)ifstats.tx_rate / 1024.0 / 1024.0),
                  ifstats.ipv4,

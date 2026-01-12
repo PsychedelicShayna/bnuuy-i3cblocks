@@ -15,6 +15,8 @@
 
 #include "common.h"
 
+#include "braille.h"
+
 #ifndef USLEEPFOR
 #define USLEEPFOR 1000000
 #endif /* ifndef USLEEPFOR */
@@ -120,6 +122,13 @@ void output(void)
                 tf[10], tf[11],
                 // S       S
                 tf[12], tf[13]),
+
+          wpomf(modspan(psa, .foreground = rgbx(FG_DIM)),
+              PAT_ITAL,
+              "%lc%lc%lc ",
+              BRAILLE_TABLE[lt->tm_hour],
+              BRAILLE_TABLE[lt->tm_min],
+              BRAILLE_TABLE[lt->tm_sec]),
 
           wpomf(modspan(psa, .foreground = rgbx(AQUA)),
                 PAT_NULL,
