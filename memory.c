@@ -1,8 +1,10 @@
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "color/color.h"
+#include "i3bar.h"
 
 #ifndef USLEEPFOR
 #define USLEEPFOR 1000000
@@ -37,8 +39,14 @@ memory_sample_t sample_memory(void)
 
 void output(void)
 {
+    setlocale(LC_ALL, "");
+
     GradientStep* gradient = Gradient(
       Threshold(32.0, GREEN), Threshold(64.0, ORANGE), Threshold(100.0, RED));
+
+    i3bar_block_t block;
+    i3bar_block_init(&block);
+    block.full_text = malloc(sizeof(wchar_t) * 64);
 
     while(1) {
         memory_sample_t sample = sample_memory();
@@ -46,14 +54,11 @@ void output(void)
         double          perc   = (used / sample.memtotal) * 100;
         used                   = used / 1024 / 1024;
 
-        char full_text[64], out[256];
-        sprintf(full_text, "%.0lf%% %.03lfG  ", perc, used);
+        swprintf(block.full_text, 64, L"%.0lf%% %.03lfG  ", perc, used);
 
-        const char* color_hex = map_to_color_hex(used, gradient);
-        sprintf(out, JSON_OUTPUT_TEMPLATE, full_text, color_hex);
+        block.color = map_to_color_hex(used, gradient);
+        i3bar_block_output(&block);
 
-        fprintf(stdout, "%s", out);
-        fflush(stdout);
         usleep(USLEEPFOR);
     }
 }
