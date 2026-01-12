@@ -4,3 +4,4 @@ other/
 ref/
 *.out
 private.h
+.cache
