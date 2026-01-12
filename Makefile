@@ -19,6 +19,8 @@ ifeq ($(CC), clang)
 	CFLAGS += -Wvla -Wimplicit-fallthrough
 	CFLAGS += -fsanitize=address,undefined,object-size#,bounds
 	# CFLAGS += -fno-omit-frame-pointer
+
+	# debug
 	CFLAGS += -Og
 	CFLAGS += -g
 else
@@ -26,13 +28,18 @@ else
 	CFLAGS += -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion
 	CFLAGS += -Wsign-conversion -Wfloat-equal -Wformat=2
 	CFLAGS += -Wundef -Wcast-align
+	# debug
+	CFLAGS += -O0
+	CFLAGS += -g
 endif
+
+
 # CFLAGS += -Wall -Wextra -Wpedantic
 # CFLAGS += -Wshadow -Warray-bounds -Wnull-dereference
 # CFLAGS += -Wconversion -Wsign-conversion -Wfloat-equal
 # CFLAGS += -Wformat -Wundef -Wcast-align
 # CFLAGS += -Wvla -Wimplicit-fallthrough
-# CFLAGS += -fsanitize=address,undefined
+CFLAGS += -fsanitize=address,undefined
 
 
 pango: pango2.c
@@ -46,12 +53,14 @@ cpu: cpu.c
 gpu: gpu.c
 	$(CC) gpu.c  -DUSLEEPFOR=1000000 $(CFLAGS) $(shell pkg-config --cflags nvidia-ml) $(shell pkg-config --libs nvidia-ml) -lnvidia-ml -o blocks/gpu
 
+netip: netip.c
+	$(CC) netip.c  -DUSLEEPFOR=1000000 $(CFLAGS) -lcurl -o blocks/netip
 
 memory: memory.c
 	$(CC) memory.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/memory
 
 datetime: datetime.c
-	$(CC) datetime.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/datetime
+	$(CC) datetime.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/datetime -lcurl -lm -ljson-c
 
 
 clean:
