@@ -3,3 +3,4 @@ old/
 other/
 ref/
 *.out
+private.h
