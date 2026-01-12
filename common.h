@@ -30,6 +30,15 @@
 // 0000000000101111
 // 0000000000100000
 
+uintptr_t align(uintptr_t num, uintptr_t pow2)
+{
+    if((pow2 & (pow2 - 1)) != 0) {
+        fprintf(stderr, "Not a pow2: %ld\n", pow2);
+    }
+
+    return ((num + pow2) - 1) & ~(uintptr_t)(pow2 - 1);
+}
+
 static inline bool ispow2(uintmax_t value)
 {
     // Logically, a power of 2 minus 1 CANNOT have bit in common flipped.

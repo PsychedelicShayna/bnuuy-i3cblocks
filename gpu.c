@@ -1,9 +1,13 @@
 #include "color/color.h"
+#include "i3bar.h"
+#include "pango2.h"
 
+#include <locale.h>
 #include <nvml.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <wchar.h>
 
 #ifndef USLEEPFOR
 #define USLEEPFOR 1000000
@@ -26,7 +30,8 @@ typedef struct {
     unsigned memoryusage;
 } gpu_metrics_t;
 
-gpu_metrics_t sample_gpu(void) {
+gpu_metrics_t sample_gpu(void)
+{
     nvmlDevice_t      dev; // handle to GPU
     nvmlReturn_t      err; // error code if any
     nvmlUtilization_t use; // % utilization for vram and gpu
@@ -52,9 +57,17 @@ gpu_metrics_t sample_gpu(void) {
     return ret;
 }
 
-static inline void output(void) {
+static inline void output(void)
+{
+    setlocale(LC_ALL, "");
+
     GradientStep* gradient = Gradient(
       Threshold(45.0, GREEN), Threshold(60.0, ORANGE), Threshold(100.0, RED));
+
+    i3bar_block_t block;
+    i3bar_block_init(&block);
+    block.full_text = malloc(sizeof(wchar_t) * 64);
+    block.separator = false;
 
     while(1) {
         gpu_metrics_t metrics = sample_gpu();
@@ -62,20 +75,20 @@ static inline void output(void) {
         unsigned int utilization = metrics.utilization,
                      temperature = metrics.temperature;
 
-        char full_text[64], out[256];
-        sprintf(full_text, "%2.u%% %u°C  ", utilization, temperature);
+        block.color = map_to_color_hex(metrics.temperature, gradient);
 
-        const char* color_hex = map_to_color_hex(metrics.temperature, gradient);
-        sprintf(out, JSON_OUTPUT_TEMPLATE, full_text, color_hex);
+        swprintf(
+          block.full_text, 64, L"%2.u%% %u°C  ", utilization, temperature);
 
-        fprintf(stdout, "%s", out);
-        fflush(stdout);
-
+        i3bar_block_output(&block);
         usleep(USLEEPFOR);
     }
+
+    free(block.full_text);
 }
 
-int main(void) {
+int main(void)
+{
     output();
     return EXIT_SUCCESS;
 }

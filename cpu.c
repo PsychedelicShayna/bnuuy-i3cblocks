@@ -9,6 +9,7 @@
 
 #ifndef CHARTSIZE
 #define CHARTSIZE 32
+
 #endif
 
 #include "braille.h"
@@ -151,6 +152,7 @@ void output(void)
     i3bar_block_t block;
     i3bar_block_init(&block);
     block.markup = "pango";
+    block.separator = false;
 
 #ifdef TODO_REPLACE_THIS
     // String builder for pango markup. We will use this to write to the
@@ -271,7 +273,7 @@ void output(void)
             pango_format(pre_outbuf,
                          (sizeof(pre_outbuf) / sizeof(pre_outbuf[0])),
                          braille_chars,
-                         PSBT_NULL,
+                         PAT_NULL,
                          &braille_span);
 
             // wprintf(L"preoutbuf: %ls\n", pre_outbuf);
@@ -302,7 +304,7 @@ void output(void)
         panspan_init(&ps);
         ps.foreground = (char*)color_hex;
 
-        pango_format(outbuf, 1024, pre_outbuf, PSBT_NULL, &ps);
+        pango_format(outbuf, 1024, pre_outbuf, PAT_NULL, &ps);
 
         // wprintf(L"outbuf: %ls\n", outbuf);
         wcscat(largebuf_pango, outbuf);
