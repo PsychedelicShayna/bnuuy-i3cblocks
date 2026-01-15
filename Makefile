@@ -62,6 +62,9 @@ memory: memory.c
 datetime: datetime.c
 	$(CC) datetime.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/datetime -lcurl -lm -ljson-c
 
+disk: disk.c
+	$(CC) disk.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/disk -lm
+
 
 clean:
 	rm ./blocks/cpu  ./blocks/gpu ./blocks/datetime ./blocks/*_test 2>&1>/dev/null
