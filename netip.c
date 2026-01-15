@@ -24,7 +24,7 @@
 
 #include "color/color.h"
 #include "i3bar.h"
-#include "pango2.h"
+#include "pango.h"
 
 #define PUBLIC_IP_API "https://myip.wtf/"
 #define MONITOR_IFACE "enp7s0"

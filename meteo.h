@@ -16,24 +16,9 @@
 #include <json-c/json_object.h>
 #include <json-c/json_tokener.h>
 
+#include "common.h"
 #include "private.h"
 
-#ifdef DEBUG
-#define debug(message)                  \
-    {                                   \
-        fprintf(stderr, "%s", message); \
-        fflush(stderr);                 \
-    }
-
-#define debugf(format, ...)                   \
-    {                                         \
-        fprintf(stderr, format, __VA_ARGS__); \
-        fflush(stderr);                       \
-    }
-#else
-#define debug(message)
-#define debugf(format, ...)
-#endif
 
 #define jget(type, obj, key)                         \
     ({                                               \
@@ -74,16 +59,19 @@ size_t cb_curl_recv_data(void* chunk, size_t size, size_t nmemb, void* outvoid)
         return 0;
     }
 
+    if(!(out->size <= out->capacity)) return 0;
     assert(out->size <= out->capacity);
 
     if(out->size + real_size >= out->capacity) {
         size_t new_size =
           (out->capacity + step * (size_t)ceilf((float)(real_size + 1) / step));
 
+        if(new_size >= max_size) return 0;
         assert(new_size < max_size && "new realloc of would exceed maxsize");
 
         char* ptr = reallocarray(out->data, new_size, sizeof(char));
-        assert(ptr != NULL && "reallocarray() returned NULL (OOM)");
+        if(ptr == NULL) return 0;
+        // assert(ptr == NULL && "reallocarray() returned NULL (OOM)");
         memset(ptr + out->size, 0, new_size - out->size);
 
         out->data     = ptr;
@@ -118,7 +106,7 @@ double get_current_temperature_2m(double latitude, double longitude)
     growbuf_t growbuf = (growbuf_t) { .data = NULL, .capacity = 0, .size = 0 };
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 4L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 0L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cb_curl_recv_data);
@@ -133,7 +121,8 @@ double get_current_temperature_2m(double latitude, double longitude)
 
     if(err != CURLE_OK) {
         debugf("curl_easy_perform() failed: %s\n", curl_easy_strerror(err));
-        assert(err == CURLE_OK);
+        return -1;
+        // assert(err == CURLE_OK);
     }
 
     debugf("Growbuf: size %zu; cap %zu; data (%p)------\n%s\n-----\n",
@@ -141,14 +130,16 @@ double get_current_temperature_2m(double latitude, double longitude)
            growbuf.capacity,
            growbuf.data,
            growbuf.data);
-
-    assert(growbuf.size);
+  
+    if(!growbuf.size) return -1;
+    // assert(growbuf.size);
 
     struct json_object* pj = NULL;
 
     pj = json_tokener_parse(growbuf.data);
 
-    assert(pj != NULL);
+    if(pj == NULL) return -1;
+    // assert(pj != NULL);
 
     struct json_object* current        = jgeto(pj, current);
     double              temperature_2m = jget(double, current, temperature_2m);

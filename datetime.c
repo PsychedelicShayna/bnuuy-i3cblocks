@@ -8,7 +8,7 @@
 
 #include "color/color.h"
 #include "i3bar.h"
-#include "pango2.h"
+#include "pango.h"
 
 #include "meteo.h"
 #include "private.h"
@@ -78,7 +78,7 @@ void output(void)
         lt = localtime(&t);
 
         // Update weater every 2 minutes if usleep is 1 second.
-        if(i == (60 * 2)) {
+        if(i >= (60 * 2)) {
             i = 1;
 
             temperature =

@@ -15,7 +15,7 @@
 #include "braille.h"
 #include "color/color.h"
 #include "i3bar.h"
-#include "pango2.h"
+#include "pango.h"
 
 // #include "pango.h"
 

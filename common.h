@@ -11,6 +11,63 @@
 #include <string.h>
 #include <wchar.h>
 
+#ifdef DEBUG
+#define debug(message)                  \
+    {                                   \
+        fprintf(stderr, "%s", message); \
+        fflush(stderr);                 \
+    }
+
+#define debugf(format, ...)                   \
+    {                                         \
+        fprintf(stderr, format, __VA_ARGS__); \
+        fflush(stderr);                       \
+    }
+#else
+#define debug(message)
+#define debugf(format, ...)
+#endif
+
+double represent_size(double size, char* suffix)
+{
+    ulong suffix_idx = 0;
+    char  suffixes[] = { 'B', 'K', 'M', 'G', 'T' };
+
+    if(suffix != NULL) {
+        switch(*suffix) {
+            case 'B':
+                suffix_idx = 0;
+                break;
+            case 'K':
+                suffix_idx = 1;
+                break;
+            case 'M':
+                suffix_idx = 2;
+                break;
+            case 'G':
+                suffix_idx = 3;
+                break;
+            case 'T':
+                suffix_idx = 4;
+                break;
+            default:
+                suffix_idx = 0;
+                break;
+        }
+    }
+
+    while(size >= 1000) {
+        size /= 1000;
+        suffix_idx++;
+    }
+
+    if(suffix != NULL && suffix_idx < sizeof(suffixes)) {
+        *suffix = suffixes[suffix_idx];
+    }
+
+    return size;
+}
+
 /* root [222] b(13);b(13+31);b(13+32);b(16+31);b(32);
 
 
