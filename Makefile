@@ -72,6 +72,14 @@ disk: $(SRCDIR)/disk.c
 		$(SRCDIR)/disk.c -o $(OUTDIR)/disk \
 		-DUSLEEPFOR=1000000
 
+weather: $(SRCDIR)/weather.c
+	$(CC) $(CFLAGS) $(STATIC) \
+		$(SRCDIR)/weather.c -o $(OUTDIR)/weather \
+		-DUSLEEPFOR=1000000 \
+		-ljson-c \
+		-lcurl
+
+
 clean:
 	rm \
 		./$(OUTDIR)/cpu \
