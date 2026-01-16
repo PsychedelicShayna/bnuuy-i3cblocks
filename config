@@ -98,6 +98,11 @@ format=json
 # interval=300
 # color=#b16286
 
+[Weather]
+command=blocks/weather
+interval=persist
+format=json
+
 [Time]
 # command=$PWD/clock.sh
 command=blocks/datetime

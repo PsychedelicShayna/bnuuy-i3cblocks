@@ -10,11 +10,6 @@
 #include "i3bar.h"
 #include "pango.h"
 
-#include "meteo.h"
-#include "private.h"
-
-#include "common.h"
-
 #include "braille.h"
 
 #ifndef USLEEPFOR
@@ -23,9 +18,6 @@
 
 #include <time.h>
 #include <unistd.h>
-
-#include <curl/curl.h>
-#include <curl/easy.h>
 
 #define printf(format, ...)        wprintf(L##format, ##__VA_ARGS__)
 #define fprintf(file, format, ...) fwprintf(file, L##format, ##__VA_ARGS__)
@@ -64,10 +56,6 @@ void output(void)
     time_t     t  = time(NULL);
     struct tm* lt = NULL;
 
-    double temperature = -1;
-
-    temperature = get_current_temperature_2m(LOCATION1_LAT, LOCATION1_LON);
-
     for(uint64_t i = 1; i < UINT64_MAX; ++i) {
         usleep(USLEEPFOR);
 
@@ -77,14 +65,6 @@ void output(void)
         t  = time(NULL);
         lt = localtime(&t);
 
-        // Update weater every 2 minutes if usleep is 1 second.
-        if(i >= (60 * 2)) {
-            i = 1;
-
-            temperature =
-              get_current_temperature_2m(LOCATION1_LAT, LOCATION1_LON);
-        }
-
         char tf[24] = { 0 };
         strftime(tf, sizeof(tf) / sizeof(tf[0]), "%a%d%b%H%M%S", lt);
 
@@ -92,14 +72,10 @@ void output(void)
         i3bcat(
           &i3b,
 
-          // Weather
-          wpomf(modspan(psa, .foreground = rgbx(YELLOW)),
-                PAT_ITAL | PAT_SMAL, "  %.02lf°C ", temperature ),
-
           wpomf(modspan(psa, .foreground = rgbx(FG_DIM)),
                 PAT_ITAL,
                 // F r i  0 9  J a n 
-                " %c%c%c %c%c %c%c%c",
+                "%c%c%c %c%c %c%c%c",
                 // J       a       n
                 tf[5],  tf[6],  tf[7],  
                 // 0       9
