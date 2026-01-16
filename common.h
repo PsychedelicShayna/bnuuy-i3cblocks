@@ -9,7 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <wchar.h>
+
+#include <math.h>
 
 #ifdef DEBUG
 #define debug(message)                  \
@@ -27,6 +30,47 @@
 #define debug(message)
 #define debugf(format, ...)
 #endif
+
+double truncate_precision(double x, int precision)
+{
+    double factor = pow(10.0, precision);
+    return floor(x * factor) / factor;
+}
+
+typedef struct {
+    double value;
+    char   suffix;
+    int    precision;
+} human_size_t;
+
+human_size_t human_size(uint64_t bytes)
+{
+    static const char suffixes[] = "BKMGTP";
+    size_t            idx        = 0;
+
+    double value = (double)bytes;
+
+    while(idx < sizeof(suffixes) - 1) {
+        if(value < 100.0) {
+
+            if(idx == 0) {
+                return (human_size_t) { value, suffixes[idx], 0 };
+            }
+
+            int precision = value < 10.0 ? 2 : 1;
+            value         = truncate_precision(value, precision);
+            return (human_size_t) { value, suffixes[idx], precision };
+        }
+
+        // value >= 100 not printable, force rescale
+        value /= 1000.0;
+        idx++;
+    }
+
+    // fallback (should not normally hit)
+    value = truncate_precision(value, 2);
+    return (human_size_t) { value, suffixes[idx], 2 };
+}
 
 double represent_size(double size, char* suffix)
 {

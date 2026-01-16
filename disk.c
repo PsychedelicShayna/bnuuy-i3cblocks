@@ -1,42 +1,55 @@
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-void* hijack_malloc(unsigned long s)
-{
-    fprintf(stderr, "Malloc: %zu\n", s);
-    fflush(stderr);
-    return malloc(s);
-}
-void* hijack_calloc(unsigned long s, unsigned long c)
-{
-    fprintf(stderr, "Calloc: %zu*%zu=%zu\n", s, c, s * c);
-    fflush(stderr);
-    return calloc(s, c);
-}
-void hijack_free(void* __ptr)
-{
-    fprintf(stderr, "Free: %p\n", __ptr);
-    fflush(stderr);
-    free(__ptr);
-}
-
-#define malloc(s)    hijack_malloc(s)
-#define calloc(s, c) hijack_calloc(s, c)
-#define free(p)      hijack_free(p)
 
 #include <locale.h>
 #include <string.h>
 #include <unistdio.h>
 #include <wchar.h>
 
+#include <inttypes.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 
+#include "braille.h"
 #include "color/color.h"
 #include "i3bar.h"
 #include "pango.h"
 
 #define DEBUG
 #include "common.h"
+
+typedef struct {
+    uint64_t total;
+    uint64_t free;
+    uint64_t avail;
+    uint64_t used_free;
+    uint64_t used_avail;
+    double   free_perc;
+    double   avail_perc;
+} disk_usage_t;
+
+int get_disk_usage(const char* mount_point, disk_usage_t* out)
+{
+    struct statvfs vfs;
+
+    if(statvfs(mount_point, &vfs) != 0) {
+        return -1;
+    }
+
+    out->total      = vfs.f_blocks * vfs.f_frsize;
+    out->free       = vfs.f_bfree * vfs.f_frsize;
+    out->avail      = vfs.f_bavail * vfs.f_frsize;
+    out->used_free  = out->total - out->free;
+    out->used_avail = out->total - out->avail;
+
+    out->free_perc =
+      (double)out->used_free / (out->total ? (double)out->total : 1.0) * 100.0;
+
+    out->avail_perc =
+      (double)out->used_avail / (out->total ? (double)out->total : 1.0) * 100.0;
+
+    return 0;
+}
 
 typedef struct {
     uint64_t r;
@@ -59,13 +72,6 @@ disk_rw_rate_t sample_disk_rw_stats(const char* device)
 
     sprintf(sys_block_path, "/sys/block/%s/stat", device);
     FILE* fd = fopen(sys_block_path, "rb");
-
-    // struct stat path_stat;
-
-    // if(stat(sys_block_path, &path_stat) != 0) {
-    //     perror("stat");
-    //     exit(EXIT_FAILURE);
-    // }
 
     disk_rw_rate_t rw_rate = { 0 };
 
@@ -102,6 +108,16 @@ disk_rw_rate_t sample_disk_rw_stats(const char* device)
     return rw_rate;
 }
 
+//    9B : 9B
+//   99K : 99B
+//  999B : 999B
+// 9.99K : 9999B
+// 99.9K : 99999B
+// 0.99M : 999999B
+// 9.99G : 9999999B
+// 99.9G : 99999999B
+// 1.99T : 999999999B
+
 void output()
 {
     setlocale(LC_ALL, "");
@@ -121,39 +137,28 @@ void output()
     for(;;) {
         disk_rw_rate_t sample = sample_disk_rw_stats("nvme0n1");
 
-        char r_suffix = 'K', w_suffix = 'K';
+        human_size_t rate_r_hs = human_size(sample.rate.r * 1024);
+        human_size_t rate_w_hs = human_size(sample.rate.w * 1024);
 
-        double rate_r = (double)sample.rate.r;
-        double rate_w = (double)sample.rate.w;
-
-        rate_r = represent_size(rate_r, &r_suffix);
-        rate_w = represent_size(rate_w, &w_suffix);
-
-        bool r_float = (rate_r - floor(rate_r)) > 0;
-        bool w_float = (rate_w - floor(rate_w)) > 0;
-
-        const char* pre_fmt = " %c %s ↑↓ %s %c";
-
-        static char b1[16 + 13];
-        static char b2[16 + 13];
-        memset(b1, 0, sizeof(b1));
-        memset(b2, 0, sizeof(b2));
-
-        sprintf(b1,
-                pre_fmt,
-                r_suffix,
-                r_float ? "%6.02lf" : "%6ld",
-                w_float ? "%-6.02lf" : "%-6ld",
-                w_suffix);
-
-        sprintf(b2, b1, r_float ? rate_r : (ulong)rate_r,
-                        w_float ? rate_w : (ulong)rate_w);
+        disk_usage_t du1, du2;
+        get_disk_usage("/", &du1);
+        get_disk_usage("/mnt/alias/m2/", &du2);
 
         i3bcat(
           &i3b,
-            wpomf(modspan(span, .foreground = rgbx(YELLOW)), PAT_NULL, "%s", b2)
-
-        );
+          wpomf(modspan(span, .foreground = rgbx(YELLOW)),
+                PAT_NULL,
+                "%4.*lf%c↑ %4.*lf%c↓|   %.lf%% %lldG   %.lf%% %lldG",
+                rate_r_hs.precision,
+                rate_r_hs.value,
+                rate_r_hs.suffix,
+                rate_w_hs.precision,
+                rate_w_hs.value,
+                rate_w_hs.suffix,
+                du1.avail_perc,
+                du1.avail / 1024 / 1024 / 1024,
+                du2.avail_perc,
+                du2.avail / 1024 / 1024 / 1024));
 
         i3bar_block_output(&i3b);
         memset(i3b.full_text, 0, PANGO_SZMAX * sizeof(wchar_t));
@@ -165,16 +170,5 @@ void output()
 int main(void)
 {
     output();
-
     return EXIT_SUCCESS;
 }
-
-// printf("   %s %s", $used_perc, $avail_size);
-// /dev/nvme1n1p1  1.8T  1.7T   44G  98% /mnt/alias/m2
-//
-// R=$(( (${NEW[0]} - ${OLD[0]}) * 512 / 1024 ))
-// W=$(( (${NEW[1]} - ${OLD[1]}) * 512 / 1024 ))
-// NEW=($(cat /sys/block/$DEVICE/stat | awk '{print $3, $7}'))
-// echo "${R}K↓ ${W}K↑"
-// 1097035   283840 63175118   220276  2327008  2721592 246934900  9284296 0
-// 412086  9654669   159119        0 306546560    54765   270087    95330
