@@ -1,31 +1,31 @@
 [
     {
-        "command": "cc -c -o bin/cpu -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include src/cpu.c",
+        "command": "cc -c -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include -o blocks/cpu -DUSLEEPFOR=1000000 src/cpu.c",
         "directory": "/home/shayna/.config/i3blocks",
         "file": "/home/shayna/.config/i3blocks/src/cpu.c"
     },
     {
-        "command": "cc -c -o bin/gpu -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include -I/opt/cuda/targets/x86_64-linux/include src/gpu.c",
+        "command": "cc -c -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include -o blocks/gpu -DUSLEEPFOR=1000000 -I/opt/cuda/targets/x86_64-linux/include src/gpu.c",
         "directory": "/home/shayna/.config/i3blocks",
         "file": "/home/shayna/.config/i3blocks/src/gpu.c"
     },
     {
-        "command": "cc -c -o bin/netip -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include src/netip.c",
+        "command": "cc -c -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include -o blocks/netip -DUSLEEPFOR=1000000 src/netip.c",
         "directory": "/home/shayna/.config/i3blocks",
         "file": "/home/shayna/.config/i3blocks/src/netip.c"
     },
     {
-        "command": "cc -c -o bin/memory -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include src/memory.c",
+        "command": "cc -c -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include -o blocks/memory -DUSLEEPFOR=1000000 src/memory.c",
         "directory": "/home/shayna/.config/i3blocks",
         "file": "/home/shayna/.config/i3blocks/src/memory.c"
     },
     {
-        "command": "cc -c -o bin/datetime -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include src/datetime.c",
+        "command": "cc -c -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include -o blocks/datetime -DUSLEEPFOR=1000000 src/datetime.c",
         "directory": "/home/shayna/.config/i3blocks",
         "file": "/home/shayna/.config/i3blocks/src/datetime.c"
     },
     {
-        "command": "cc -c -o bin/disk -DUSLEEPFOR=1000000 -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include src/disk.c",
+        "command": "cc -c -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow -Warray-bounds=2 -Wnull-dereference -Wstringop-overflow=2 -Wstrict-prototypes -Wconversion -Wsign-conversion -Wfloat-equal -Wformat=2 -Wundef -Wcast-align -O3 -Isrc/include -o blocks/disk -DUSLEEPFOR=1000000 src/disk.c",
         "directory": "/home/shayna/.config/i3blocks",
         "file": "/home/shayna/.config/i3blocks/src/disk.c"
     }
