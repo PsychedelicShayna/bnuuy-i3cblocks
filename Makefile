@@ -30,31 +30,56 @@ else
 endif
 endif
 
+CFLAGS += -Isrc/include
 
-pango: pango2.c
-	$(CC) $(CFLAGS) pango2.c -o pango_test
+OUTDIR=blocks
+SRCDIR=src
+STATIC=-lm
 
-all: cpu gpu netip memory datetime
+all: cpu gpu netip memory datetime disk
 
-cpu: cpu.c
-	$(CC) cpu.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/cpu
+cpu: $(SRCDIR)/cpu.c
+	$(CC) $(CFLAGS) $(STATIC) $(SRCDIR)/cpu.c -o $(OUTDIR)/cpu -DUSLEEPFOR=1000000  
 
-gpu: gpu.c
-	$(CC) gpu.c  -DUSLEEPFOR=1000000 $(CFLAGS) $(shell pkg-config --cflags nvidia-ml) $(shell pkg-config --libs nvidia-ml) -lnvidia-ml -o blocks/gpu
+gpu: $(SRCDIR)/gpu.c
+	$(CC) $(CFLAGS) $(STATIC) \
+		$(SRCDIR)/gpu.c -o $(OUTDIR)/gpu \
+		-DUSLEEPFOR=1000000 \
+		$(shell pkg-config --cflags nvidia-ml) \
+		$(shell pkg-config --libs nvidia-ml)  \
+		-lnvidia-ml
 
-netip: netip.c
-	$(CC) netip.c  -DUSLEEPFOR=1000000 $(CFLAGS) -lcurl -o blocks/netip
+netip: $(SRCDIR)/netip.c
+	$(CC) $(CFLAGS) $(STATIC) \
+		$(SRCDIR)/netip.c -o $(OUTDIR)/netip \
+		-DUSLEEPFOR=1000000 \
+		-lcurl
 
-memory: memory.c
-	$(CC) memory.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/memory
+memory: $(SRCDIR)/memory.c
+	$(CC) $(CFLAGS) $(STATIC) \
+		$(SRCDIR)/memory.c -o $(OUTDIR)/memory \
+		-DUSLEEPFOR=1000000
 
-datetime: datetime.c
-	$(CC) datetime.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/datetime -lcurl -lm -ljson-c
+datetime: $(SRCDIR)/datetime.c
+	$(CC) $(CFLAGS) $(STATIC) \
+		$(SRCDIR)/datetime.c -o $(OUTDIR)/datetime \
+		-DUSLEEPFOR=1000000  \
+		-ljson-c \
+		-lcurl
 
-disk: disk.c
-	$(CC) disk.c  -DUSLEEPFOR=1000000 $(CFLAGS) -o blocks/disk -lm
-
+disk: $(SRCDIR)/disk.c
+	$(CC) $(CFLAGS) $(STATIC) \
+		$(SRCDIR)/disk.c -o $(OUTDIR)/disk \
+		-DUSLEEPFOR=1000000
 
 clean:
-	rm ./blocks/cpu  ./blocks/gpu ./blocks/datetime ./blocks/memory ./blocks/netip ./blocks/*_test 2>&1>/dev/null
+	rm \
+		./$(OUTDIR)/cpu \
+		./$(OUTDIR)/gpu \
+		./$(OUTDIR)/netip \
+		./$(OUTDIR)/memory \
+		./$(OUTDIR)/datetime \
+		./$(OUTDIR)/disk \
+		./$(OUTDIR)/*_test \
+		2>&1>/dev/null
 

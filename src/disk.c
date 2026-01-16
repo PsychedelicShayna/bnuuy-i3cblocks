@@ -118,7 +118,7 @@ disk_rw_rate_t sample_disk_rw_stats(const char* device)
 // 99.9G : 99999999B
 // 1.99T : 999999999B
 
-void output()
+void output(void)
 {
     setlocale(LC_ALL, "");
 

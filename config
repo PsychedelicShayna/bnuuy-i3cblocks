@@ -6,7 +6,7 @@
 ## Accents (soft)
 #set $gb_blue    #458588
 #set $gb_aqua    #689d6a
-#set $gb_green   #98971a
+#set $gb_green   #98971a 
 #set $gb_yellow  #d79921
 #set $gb_orange  #d65d0e
 #set $gb_red     #cc241d
@@ -44,18 +44,23 @@ command=$PWD/blocks/memory
 interval=persist
 format=json
 
-[Disk]
-# command=printf "%s \n" "$(df -h / | awk 'NR==2 { print $5, $4  }')"
-command=$PWD/disk.pl "/"
-interval=30
-color=#d79921
-
-
 [Disk2]
-# command=printf "%s \n" "$(df -h /mnt/alias/m2/ | awk 'NR==2 { print $5, $4  }')"
-command=$PWD/disk.pl /mnt/alias/m2
-interval=30
-color=#d79921
+command=$PWD/blocks/disk
+interval=persist
+format=json
+
+# [Disk]
+# # command=printf "%s \n" "$(df -h / | awk 'NR==2 { print $5, $4  }')"
+# command=$PWD/disk.pl "/"
+# interval=30
+# color=#d79921
+
+
+# [Disk2]
+# # command=printf "%s \n" "$(df -h /mnt/alias/m2/ | awk 'NR==2 { print $5, $4  }')"
+# command=$PWD/disk.pl /mnt/alias/m2
+# interval=30
+# color=#d79921
 #
 # [Disk I/O]
 # command=printf " %s \n" "$($PWD/diskio.sh)"

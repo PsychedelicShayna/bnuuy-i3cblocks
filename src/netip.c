@@ -45,7 +45,7 @@ net_io_rate_t sample_net_io_rate(void)
 {
 
     net_io_rate_t nior;
-    const char *path_rx =
+    const char *  path_rx =
                  "/sys/class/net/" MONITOR_IFACE "/statistics/rx_bytes",
 
                *path_tx =

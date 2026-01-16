@@ -1,4 +1,8 @@
+# Braille Table
+
+```
 Chart Example: ⢰⢸⣀⣰⣠⣦⢸⡄⡇⣧⣧⡄⡀⣰⣸⣸⣿⣦
+```
 
 Logically Mapped Table
 
@@ -6,6 +10,7 @@ Logically Mapped Table
 - this is the most useful table for binary representation/byte conversion
 - *took me hours to lay out the numerically mapped one into a logical mapping*
 
+```
   0 1 2 3 4 5 6 7 8 9 A B C D E F
 0 ⠀ ⠁ ⠂ ⠃ ⠄ ⠅ ⠆ ⠇ ⡀ ⡁ ⡂ ⡃ ⡄ ⡅ ⡆ ⡇
 1 ⠈ ⠉ ⠊ ⠋ ⠌ ⠍ ⠎ ⠏ ⡈ ⡉ ⡊ ⡋ ⡌ ⡍ ⡎ ⡏
@@ -23,12 +28,14 @@ C ⢠ ⢡ ⢢ ⢣ ⢤ ⢥ ⢦ ⢧ ⣠ ⣡ ⣢ ⣣ ⣤ ⣥ ⣦ ⣧
 D ⢨ ⢩ ⢪ ⢫ ⢬ ⢭ ⢮ ⢯ ⣨ ⣩ ⣪ ⣫ ⣬ ⣭ ⣮ ⣯
 E ⢰ ⢱ ⢲ ⢳ ⢴ ⢵ ⢶ ⢷ ⣰ ⣱ ⣲ ⣳ ⣴ ⣵ ⣶ ⣷
 F ⢸ ⢹ ⢺ ⢻ ⢼ ⢽ ⢾ ⢿ ⣸ ⣹ ⣺ ⣻ ⣼ ⣽ ⣾ ⣿
+```
 
 
 Numerically Mapped Table
 
 Based on literal byte values of braille characters
 
+```
   0 1 2 3 4 5 6 7     8 9 A B C D E F
 0   ⠐ ⠠ ⠰ ⡀ ⡐ ⡠ ⡰     ⢀ ⢐ ⢠ ⢰ ⣀ ⣐ ⣠ ⣰
 1 ⠁ ⠑ ⠡ ⠱ ⡁ ⡑ ⡡ ⡱     ⢁ ⢑ ⢡ ⢱ ⣁ ⣑ ⣡ ⣱
@@ -47,9 +54,11 @@ C ⠌ ⠜ ⠬ ⠼ ⡌ ⡜ ⡬ ⡼     ⢌ ⢜ ⢬ ⢼ ⣌ ⣜ ⣬ ⣼
 D ⠍ ⠝ ⠭ ⠽ ⡍ ⡝ ⡭ ⡽     ⢍ ⢝ ⢭ ⢽ ⣍ ⣝ ⣭ ⣽
 E ⠎ ⠞ ⠮ ⠾ ⡎ ⡞ ⡮ ⡾     ⢎ ⢞ ⢮ ⢾ ⣎ ⣞ ⣮ ⣾
 F ⠏ ⠟ ⠯ ⠿ ⡏ ⡟ ⡯ ⡿     ⢏ ⢟ ⢯ ⢿ ⣏ ⣟ ⣯ ⣿
+```
 
 Based on
 
+```
 ⠀ ⠐ ⠠ ⠰ ⡀ ⡐ ⡠ ⡰ ⢀ ⢐ ⢠ ⢰ ⣀ ⣐ ⣠ ⣰
 ⠁ ⠑ ⠡ ⠱ ⡁ ⡑ ⡡ ⡱ ⢁ ⢑ ⢡ ⢱ ⣁ ⣑ ⣡ ⣱
 ⠂ ⠒ ⠢ ⠲ ⡂ ⡒ ⡢ ⡲ ⢂ ⢒ ⢢ ⢲ ⣂ ⣒ ⣢ ⣲
@@ -66,3 +75,4 @@ Based on
 ⠍ ⠝ ⠭ ⠽ ⡍ ⡝ ⡭ ⡽ ⢍ ⢝ ⢭ ⢽ ⣍ ⣝ ⣭ ⣽
 ⠎ ⠞ ⠮ ⠾ ⡎ ⡞ ⡮ ⡾ ⢎ ⢞ ⢮ ⢾ ⣎ ⣞ ⣮ ⣾
 ⠏ ⠟ ⠯ ⠿ ⡏ ⡟ ⡯ ⡿ ⢏ ⢟ ⢯ ⢿ ⣏ ⣟ ⣯ ⣿
+```
