@@ -26,7 +26,8 @@ void output(void)
     while(1) {
         double temperature = 0.0;
 
-        get_current_temperature_2m(&temperature, LOCATION1_LAT, LOCATION1_LON);
+         get_current_temperature_2m(
+          &temperature, LOCATION1_LAT, LOCATION1_LON);
 
         i3bcat(&block,
                wpomf(span, PAT_ITAL | PAT_SMAL, "  %.02lf°C", temperature));

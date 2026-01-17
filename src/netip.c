@@ -85,10 +85,6 @@ typedef struct {
     uint64_t tx_rate;
 } ifstats_t;
 
-void print_route(void)
-{
-}
-
 void get_iface_stats(const char*  iface,
                      ifstats_t*   out,
                      __useconds_t samplesleep)
