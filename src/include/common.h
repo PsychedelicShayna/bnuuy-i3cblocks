@@ -14,6 +14,24 @@
 
 #include <math.h>
 
+#ifdef JSON_MACROS
+
+#define jget(type, obj, key)                         \
+    ({                                               \
+        struct json_object* _obj;                    \
+        json_object_object_get_ex(obj, #key, &_obj); \
+        json_object_get_##type(_obj);                \
+    })
+
+#define jgeto(obj, key)                              \
+    ({                                               \
+        struct json_object* _obj;                    \
+        json_object_object_get_ex(obj, #key, &_obj); \
+        _obj;                                        \
+    })
+#endif
+
+
 #ifdef DEBUG
 #define debug(message)                  \
     {                                   \

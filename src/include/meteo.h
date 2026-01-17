@@ -13,25 +13,11 @@
 #include <curl/easy.h>
 
 #include <json-c/json.h>
-#include <json-c/json_object.h>
-#include <json-c/json_tokener.h>
 
+#define JSON_MACROS
 #include "common.h"
+
 #include "private.h"
-
-#define jget(type, obj, key)                         \
-    ({                                               \
-        struct json_object* _obj;                    \
-        json_object_object_get_ex(obj, #key, &_obj); \
-        json_object_get_##type(_obj);                \
-    })
-
-#define jgeto(obj, key)                              \
-    ({                                               \
-        struct json_object* _obj;                    \
-        json_object_object_get_ex(obj, #key, &_obj); \
-        _obj;                                        \
-    })
 
 #define API_ENDPOINT "api.open-meteo.com/v1/forecast"
 
