@@ -80,6 +80,13 @@ weather: $(SRCDIR)/weather.c
 		-lcurl
 
 
+volume: $(SRCDIR)/volume.c
+	$(CC) $(CFLAGS) $(STATIC) \
+		$(SRCDIR)/volume.c -o $(OUTDIR)/volume \
+		-DUSLEEPFOR=1000000 \
+		-lm \
+		-ljson-c
+
 clean:
 	rm \
 		./$(OUTDIR)/cpu \

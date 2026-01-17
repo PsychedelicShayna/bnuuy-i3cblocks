@@ -98,6 +98,12 @@ format=json
 # interval=300
 # color=#b16286
 
+[Volume]
+# full_text="Click Me1"
+command=blocks/volume
+interval=persist
+format=json
+
 [Weather]
 command=blocks/weather
 interval=persist
@@ -107,6 +113,7 @@ format=json
 # command=$PWD/clock.sh
 command=blocks/datetime
 interval=persist
+separator=false
 format=json
 # color=#b16286
 

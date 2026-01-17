@@ -1,9 +1,13 @@
 #ifndef _I3BAR_H
 #define _I3BAR_H
 
+#include <json-c/arraylist.h>
+#include <json-c/json_tokener.h>
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <wchar.h>
 
@@ -11,7 +15,12 @@
 #define I3B_ALIGN_RIGHT  "right"
 #define I3B_ALIGN_CENTER "center"
 
+#include <json-c/json.h>
+#include <json-c/json_object.h>
 #include <stdbool.h>
+
+#define JSON_MACROS
+#include "common.h"
 
 typedef enum { FALSE = 0, TRUE = 1, I3B_DEFAULT_BOOL = -1 } jboolean;
 
@@ -294,6 +303,114 @@ void i3bar_block_output(i3bar_block_t* block)
 
     wprintf(L"}\n");
     fflush(stdout);
+}
+
+/*  i3bar stdin click input
+{
+  "": "",
+  "name": "Volume",
+  "command": "blocks/volume",
+  "interval": "persist",
+  "format": "json",
+  "full_text": "<span foreground=\"#ebdbb2\" >    󰝟  󰝞  󰝝  󰖀
+󰕿 󰖁  󰕾  󱄠  347</span>", "markup": "pango", "button": 1, "modifiers":
+[], "x": 3211, "y": 1061, "relative_x": 10, "relative_y": 12, "output_x": 3211,
+  "output_y": 1061,
+  "width": 279,
+  "height": 31
+}
+*/
+
+enum I3B_MOUSE_BTN {
+    I3B_0CLICK    = 0,
+    I3B_LCLICK    = 1,
+    I3B_MCLICK    = 2,
+    I3B_RCLICK    = 3,
+    I3B_WHEELUP   = 4,
+    I3B_WHEELDOWN = 5
+};
+
+struct i3bar_proto_click_t {
+    // // Contains any normal variables contained in the click JSON.
+    // i3bar_block_t blockvars;
+
+    // Name of the block, if set
+    char* name;
+    // Instance of the block, if set
+    char* instance;
+    // X11 button ID (for example 1 to 3 for left/middle/right mouse button)
+    int32_t button;
+    // An array of the modifiers active when the click occured. The order in
+    // which the modifiers are listed is not guaranteed.
+    char** modifiers;
+    // X11 root window coordinates where the click occured.
+    int32_t x, y;
+    // Coordinates of the click elative to top left corner of block.
+    int32_t relative_x, relative_y;
+    // Coordinates relative to the current output.
+    int32_t output_x, output_y;
+    // Width and height (in px) of the block.
+    int32_t width, height;
+};
+
+typedef struct i3bar_proto_click_t i3bar_click_t;
+
+void print_i3bar_click(i3bar_click_t c)
+{
+    wprintf(L"name: %s\n"
+            "instance: %s\n"
+            "button: %d\n"
+            "modifiers: %p\n"
+            "x: %d\n"
+            "y: %d\n"
+            "relative_x: %d\n"
+            "relative_y: %d\n"
+            "output_x: %d\n"
+            "output_y: %d\n"
+            "width: %d\n"
+            "height: %d\n",
+            c.name,
+            c.instance,
+            c.button,
+            c.modifiers,
+            c.x,
+            c.y,
+            c.relative_x,
+            c.relative_y,
+            c.output_x,
+            c.output_y,
+            c.width,
+            c.height);
+}
+
+i3bar_click_t unmarshal_click_json(char* json)
+{
+
+    struct json_object* j = NULL;
+    j                     = json_tokener_parse(json);
+
+    struct json_object* jo_modifiers = NULL;
+    json_object_object_get_ex(j, "modifiers", &jo_modifiers);
+    struct array_list* al_modifiers = json_object_get_array(jo_modifiers);
+
+    i3bar_click_t click = (i3bar_click_t) {
+        .name       = jget(string, j, name),
+        .instance   = jget(string, j, instance),
+        .button     = jget(int, j, button),
+        .modifiers  = NULL,
+        .x          = jget(int, j, x),
+        .y          = jget(int, j, y),
+        .relative_x = jget(int, j, relative_x),
+        .relative_y = jget(int, j, relative_y),
+        .output_x   = jget(int, j, output_x),
+        .output_y   = jget(int, j, output_y),
+        .width      = jget(int, j, width),
+        .height     = jget(int, j, height),
+    };
+
+    json_object_put(j);
+
+    return click;
 }
 
 #endif // !_I3BAR_H
