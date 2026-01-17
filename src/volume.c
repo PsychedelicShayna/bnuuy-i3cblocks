@@ -17,8 +17,10 @@
 static void trim_nl(char* s)
 {
     size_t n = strlen(s);
-    if(n && s[n - 1] == '\n')
+
+    if(n && s[n - 1] == '\n') {
         s[n - 1] = '\0';
+    }
 }
 
 int get_volume(int* out, bool* muted)
@@ -35,8 +37,6 @@ int get_volume(int* out, bool* muted)
 
     char mute_char = '\0';
     int  n         = fscanf(fd, "Volume: %lf [MUTE%c]", &vol, &mute_char);
-
-    // fscanf(fd, "[%c", &mute_char);
 
     pclose(fd);
 
@@ -91,6 +91,9 @@ int toggle_mute()
 
 wchar_t get_volume_icon()
 {
+    //  󰕿 󰕾         󰸈  󰝟  󰝞  󰝝  󰖀 󰕿 󰖁
+    // 󰕾 󱄠
+
     wchar_t normal = L'';
     wchar_t low    = L'';
     wchar_t muted  = L'';
@@ -141,14 +144,13 @@ void output(void)
 
     i3bar_block_t block;
     i3bar_block_init(&block);
+
     block.markup    = "pango";
     block.full_text = calloc(PANGO_SZMAX, sizeof(wchar_t));
     block.separator = false;
-    // memset(block.full_text, 0, PANGO_SZMAX * sizeof(wchar_t));
 
     panspan span;
     panspan_init(&span);
-    span.foreground = rgbx(AQUA);
 
     // setvbuf(stdout, NULL, _IONBF, 0); // unbuffered stdout
 
@@ -156,17 +158,7 @@ void output(void)
     size_t  linecap = 0;
     ssize_t linelen;
 
-    // wprintf("VOL\n");
-    // fflush(stdout);  
-
-    // i3bcat(&block, wpomf(span, PAT_NULL, "%lc  ", get_volume_icon()));
-    // i3bar_block_output(&block);
-    //
-    // memset(block.full_text, 0, PANGO_SZMAX * sizeof(wchar_t));
-
     bool expanded = false;
-
-    const int TIMEOUT_SEC = 2;
 
     while(1) {
         fd_set rfds;
@@ -174,24 +166,19 @@ void output(void)
         FD_SET(STDIN_FILENO, &rfds);
 
         struct timeval tv;
-
-        if(expanded) {
-            tv.tv_sec  = TIMEOUT_SEC;
-            tv.tv_usec = 0;
-        } else {
-            tv.tv_sec  = 0;
-            tv.tv_usec = 150000;
-        }
+        tv.tv_sec  = expanded ? 2 : 0;
+        tv.tv_usec = expanded ? 0 : 150000;
 
         int rv = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &tv);
 
         if(rv < 0) {
-            if(errno == EINTR)
+            if(errno == EINTR) {
                 continue;
+            }
+
             perror("select");
             break;
-        } else if(rv == 0) {
-            // timeout, collapse to icon
+        } else if(rv == 0) { // Timeout, collapse to icon.
             expanded = false;
 
             int  vol   = -1;
@@ -207,87 +194,65 @@ void output(void)
                          get_volume_icon()));
 
             i3bar_block_output(&block);
-
             memset(block.full_text, 0, PANGO_SZMAX * sizeof(wchar_t));
+
             usleep(1000);
         }
 
-        if(FD_ISSET(STDIN_FILENO, &rfds)) {
-            linelen = getline(&line, &linecap, stdin);
-
-            if(linelen < 0) {
-                if(feof(stdin)) {
-                    // pipe closed exit cleanly
-                    break;
-                } else {
-                    perror("getline");
-                    break;
-                }
-            }
-
-            trim_nl(line);
-
-            //  󰕿 󰕾            󰸈  󰝟  󰝞  󰝝  󰖀
-            // 󰕿 󰖁  󰕾  󱄠 system("wpctl set-volume
-            // @DEFAULT_AUDIO_SINK@ 5%-"); system("wpctl set-volume
-            // @DEFAULT_AUDIO_SINK@ 5%+");
-
-            // FILE* fd = fopen("/tmp/i3b_click.json", "w");
-            // fwrite(line, sizeof(char), 252, fd);
-            // fclose(fd);
-
-            i3bar_click_t click = unmarshal_click_json(line);
-
-            // i3bar_click_t click = unmarshal_click_json(line);
-            // wprintf(L"Click: %d, %d, %d, %d, %d %d\n",
-            //         click.x,
-            //         click.y,
-            //         click.relative_x,
-            //         click.relative_y,
-            //         click.output_x,
-            //         click.output_y);
-            //
-            // fflush(stdout);
-
-            int vol = -1;
-
-            // 9ish difference on x coordinate per character?
-
-            if(click.button == I3B_WHEELDOWN) {
-                set_volume(5, -1);
-            } else if(click.button == I3B_WHEELUP) {
-                set_volume(5, 1);
-            } else if(click.button == I3B_RCLICK) {
-                toggle_mute();
-
-                if(!expanded) {
-                    continue;
-                }
-            }
-
-            expanded = true;
-
-            bool muted = false;
-
-            get_volume(&vol, &muted);
-
-            wchar_t slider[17];
-            paint_slider(slider, 16, vol);
-            slider[16] = L'\0';
-
-            Color fg = muted ? FG_DIM : (vol > 100 ? RED : AQUA);
-
-            i3bcat(&block,
-                   wpomf(modspan(span, .foreground = rgbx(fg)),
-                         PAT_NULL,
-                         "%ls %3d%%",
-                         slider,
-                         vol));
-
-            i3bar_block_output(&block);
-            memset(block.full_text, 0, PANGO_SZMAX * sizeof(wchar_t));
-            usleep(1);
+        if(!FD_ISSET(STDIN_FILENO, &rfds)) {
+            continue;
         }
+
+        linelen = getline(&line, &linecap, stdin);
+
+        if(linelen < 0) {
+            if(feof(stdin)) { // pipe closed
+                break;
+            } else {
+                perror("getline");
+                break;
+            }
+        }
+
+        trim_nl(line);
+
+        i3bar_click_t click = unmarshal_click_json(line);
+
+        switch(click.button) {
+            case I3B_WHEELDOWN:
+                set_volume(5, -1);
+                break;
+            case I3B_WHEELUP:
+                set_volume(5, 1);
+                break;
+            case I3B_RCLICK:
+                toggle_mute();
+                break;
+        }
+
+        bool muted = false;
+        int  vol   = -1;
+
+        get_volume(&vol, &muted);
+
+        wchar_t slider[17];
+        paint_slider(slider, 16, vol);
+        slider[16] = L'\0';
+
+        Color fg = muted ? FG_DIM : (vol > 100 ? RED : AQUA);
+
+        i3bcat(&block,
+               wpomf(modspan(span, .foreground = rgbx(fg)),
+                     PAT_NULL,
+                     "%ls %3d%%",
+                     slider,
+                     vol));
+
+        i3bar_block_output(&block);
+        memset(block.full_text, 0, PANGO_SZMAX * sizeof(wchar_t));
+        usleep(1);
+
+        expanded = true;
     }
 
     free(block.full_text);
@@ -295,23 +260,6 @@ void output(void)
 
 int main(void)
 {
-    setlocale(LC_ALL, "");
     output();
-    return 0;
-
-    wchar_t slider[17];
-    int     vol = -1;
-    get_volume(&vol, NULL);
-    paint_slider(slider, 16, vol);
-    slider[33] = L'\0';
-
-    wprintf(L"Slider: %ls\n", slider);
-    fflush(stdout);
-
-    // int vol = -1;
-    // int x   = get_volume(&vol);
-    // wprintf(L"x:%d, v:%d%%\n", x, vol);
-    // fflush(stdout);
-    // set_volume(5, 1);
     return EXIT_SUCCESS;
 }
